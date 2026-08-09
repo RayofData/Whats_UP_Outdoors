@@ -184,3 +184,32 @@ def build_profile(trails, expected_count):
         "duplicated_object_id_count": duplicate_object_ids,
         "missing_values": missing_values
     }
+
+def validate_download(trails, expected_object_ids):
+    """Check that the basic trail download looks complete."""
+
+    if trails.empty:
+        raise RuntimeError("Downloaded trail data is empty.")
+
+    if "OBJECTID" not in trails.columns:
+        raise RuntimeError("Downloaded data does not contain OBJECTID.")
+
+    downloaded_ids = set(trails["OBJECTID"].dropna().astype(int))
+    expected_ids = set(expected_object_ids)
+
+    missing_ids = expected_ids - downloaded_ids
+    unexpected_ids = downloaded_ids - expected_ids
+
+    if missing_ids:
+        preview = sorted(missing_ids)[:10]
+        raise RuntimeError(
+            f"{len(missing_ids)} object IDs were not downloaded. "
+            f"First missing IDs: {preview}"
+        )
+    
+    if unexpected_ids:
+        preview = sorted(unexpected_ids)[:10]
+        raise RuntimeError(
+            f"{len(unexpected_ids)} unexpected object IDs appeared. "
+            f"First unexpected IDs: {preview}"
+        )
