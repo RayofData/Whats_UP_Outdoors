@@ -1,0 +1,12 @@
+certifi
+geopandas
+ipykernel
+ipython
+jupyterlab
+matplotlib
+pandas
+pgeocode
+pyarrow
+requests
+shapely
+streamlit
