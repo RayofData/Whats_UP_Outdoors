@@ -24,9 +24,7 @@ DOWNLOAD_FIELDS = [
     "SurfaceType",
     "TrailWidthFeet",
     "ADAAccessible",
-    "SegmentLengthMiles",
-    "PublicComments",
-    "last_edited_date"
+    "SegmentLengthMiles"
 ]
 
 def request_json(params):
