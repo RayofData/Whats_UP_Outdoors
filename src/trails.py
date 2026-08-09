@@ -123,3 +123,64 @@ def download_batch(object_ids):
         raise RuntimeError("GeoJSON response did not contain a feature field")
 
     return payload
+
+
+def download_all_features(object_ids):
+    """Download and combine every matching trail feature."""
+
+    combined_features = []
+    batches = list(batched(object_ids, BATCH_SIZE))
+
+    print(f"Matching object IDs: {len(object_ids):,}")
+    print(f"Batch size: {BATCH_SIZE}")
+    print(f"Number of batches: {len(batches)}")
+
+    for batch_number, object_id_batch in enumerate(batches, start=1):
+        print(
+            f"Downloading batch {batch_number}/{len(batches)} "
+            f"({len(object_id_batch)} records...)"
+        )
+
+        payload = download_batch(object_id_batch)
+        features = payload["features"]
+
+        combined_features.extend(features)
+
+    return {
+        "type": "FeatureCollection",
+        "features": combined_features,
+    }
+
+def build_profile(trails, expected_count):
+    """Create a validation and data-quality report."""
+
+    missing_values = []
+
+    for column in trails.columns:
+        if column != trails.geometry.name:
+            missing_values[column] = int(trails[column].isna().sum())
+
+    geometry_types = {}
+
+    for geometry_type, count in trails.geometry.geom_type.value_counts(dropna=False).items():
+        geometry_types[str(geometry_type)] = int(count)
+
+    non_missing_geometry = trails.geometry.dropna()
+
+    duplicate_object_ids = None
+
+    if "OBJECTID" in trails.columns:
+        duplicate_object_ids = int(trails["OBJECTID"].duplicated().sum())
+
+    return {
+        "expected_record_count": expected_count,
+        "downloaded_record_count": len(trails),
+        "counts_match": len(trails) == expected_count,
+        "crs": str(trails.crs),
+        "geometry_types": geometry_types,
+        "missing_geometry_count": trails.geometry.isna().sum(),
+        "empty_geometry_count": non_missing_geometry.is_empty.sum(),
+        "invalid_geometry_count": (~non_missing_geometry.is_valid).sum(),
+        "duplicated_object_id_count": duplicate_object_ids,
+        "missing_values": missing_values
+    }
