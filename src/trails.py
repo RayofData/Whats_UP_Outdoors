@@ -1,7 +1,3 @@
-import json
-from pathlib import Path
-
-import geopandas as gpd 
 import requests
 
 LAYER_URL = (
@@ -13,12 +9,6 @@ QUERY_URL = f"{LAYER_URL}/query"
 
 WHERE_CLAUSE = "Peninsula = 'Upper Peninsula'"
 BATCH_SIZE = 500
-
-RAW_DIR = Path("data/raw")
-REPORT_DIR = Path("reports")
-
-OUTPUT_PATH = RAW_DIR / "dnr_up_hiking_trails.geojson"
-PROFILE_PATH = REPORT_DIR / "dnr_up_hiking_trails_profile.json"
 
 DOWNLOAD_FIELDS = [
     "OBJECTID",
@@ -120,7 +110,7 @@ def download_batch(object_ids):
     features = payload.get("features")
 
     if features is None:
-        raise RuntimeError("GeoJSON response did not contain a feature field")
+        raise RuntimeError("GeoJSON response did not contain a features field")
 
     return payload
 
@@ -154,7 +144,7 @@ def download_all_features(object_ids):
 def build_profile(trails, expected_count):
     """Create a validation and data-quality report."""
 
-    missing_values = []
+    missing_values = {}
 
     for column in trails.columns:
         if column != trails.geometry.name:
@@ -178,9 +168,9 @@ def build_profile(trails, expected_count):
         "counts_match": len(trails) == expected_count,
         "crs": str(trails.crs),
         "geometry_types": geometry_types,
-        "missing_geometry_count": trails.geometry.isna().sum(),
-        "empty_geometry_count": non_missing_geometry.is_empty.sum(),
-        "invalid_geometry_count": (~non_missing_geometry.is_valid).sum(),
+        "missing_geometry_count": int(trails.geometry.isna().sum()),
+        "empty_geometry_count": int(non_missing_geometry.is_empty.sum()),
+        "invalid_geometry_count": int((~non_missing_geometry.is_valid).sum()),
         "duplicated_object_id_count": duplicate_object_ids,
         "missing_values": missing_values
     }
