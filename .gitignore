@@ -8,10 +8,12 @@ __pycache__/
 # Generated data
 data/raw/*
 data/processed/*
+reports/*
 
 # Keep empty data folders in Git
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!reports/.gitkeep
 
 # Bundle the final app-ready demo data
 !data/processed/dnr_up_hiking_trails_grouped.parquet
