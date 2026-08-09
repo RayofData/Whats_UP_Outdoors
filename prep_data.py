@@ -19,21 +19,37 @@ PROFILE_PATH = REPORT_DIR / "dnr_up_hiking_trails_profile.json"
 
 
 def main():
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        RAW_DIR.mkdir(parents=True, exist_ok=True)
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not create output directories: {exc}"
+        )
 
     print("Requesting all matching object IDs...")
     object_ids = get_object_ids()
 
     feature_collection = download_all_features(object_ids)
 
-    OUTPUT_PATH.write_text(
-        json.dumps(feature_collection),
-        encoding="utf-8"
-    )
+    try: 
+        OUTPUT_PATH.write_text(
+            json.dumps(feature_collection),
+            encoding="utf-8"
+        )
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not save raw GeoJSON to {OUTPUT_PATH}: {exc}"
+        ) from exc
 
     print("\nLoading combined GeoJSON with GeoPandas...")
-    trails = gpd.read_file(OUTPUT_PATH)
+
+    try:
+        trails = gpd.read_file(OUTPUT_PATH)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not read raw GeoJSON from {OUTPUT_PATH}: {exc}"
+        ) from exc
 
     validate_download(trails, object_ids)
 
@@ -42,10 +58,15 @@ def main():
         expected_count=len(object_ids),
     )
 
-    PROFILE_PATH.write_text(
-        json.dumps(profile, indent=2, default=str),
-        encoding="utf-8"
-    )
+    try: 
+        PROFILE_PATH.write_text(
+            json.dumps(profile, indent=2, default=str),
+            encoding="utf-8"
+        )
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not save profile to {PROFILE_PATH}: {exc}"
+        ) from exc
 
     print("\nFull download complete.")
     print(f"Downloaded records: {len(trails):,}")
