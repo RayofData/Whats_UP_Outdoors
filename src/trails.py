@@ -66,23 +66,60 @@ def request_json(params):
     return payload
 
 def get_object_ids():
-    """Return all objects IDs matching the UP filter."""
+    """Return all object IDs matching the UP filter."""
 
     payload = request_json(
         {
             "where": WHERE_CLAUSE,
             "returnIdsOnly": "true",
             "returnGeometry": "false",
-            "f": "json"
+            "f": "json",
         }
     )
 
-    objects_ids = payload.get("objectIds")
+    object_ids = payload.get("objectIds")
 
-    if objects_ids is None:
-        raise RuntimeError("The API response did not contain an objectsIds field.")
+    if object_ids is None:
+        raise RuntimeError(
+            "The API response did not contain an objectIds field."
+        )
 
-    if not objects_ids:
-        raise RuntimeError("The API return zero matching trail segments.")
+    if not object_ids:
+        raise RuntimeError(
+            "The API returned zero matching trail segments."
+        )
 
-    return sorted(int(objects_ids) for objects_id in objects_ids)
+    return sorted(int(object_id) for object_id in object_ids)
+
+
+def batched(values, batch_size):
+    """Yield consecutive batches from a sequence."""
+
+    if type(batch_size) != int:
+        raise ValueError("batch_size must be an integer")
+
+    if batch_size <= 0:
+        raise ValueError("batch_size must be greater than zero.")
+
+    for start in range(0, len(values), batch_size):
+        yield list(values[start : start + batch_size])
+
+def download_batch(object_ids):
+    """Download one batch of features as GeoJSON."""
+
+    payload = request_json(
+        {
+            "objectIds": ",".join(map(str, object_ids)),
+            "outFields": ",".join(DOWNLOAD_FIELDS),
+            "returnGeometry": "true",
+            "outSR": "4326",
+            "f": "geojson"
+        }
+    )
+
+    features = payload.get("features")
+
+    if features is None:
+        raise RuntimeError("GeoJSON response did not contain a feature field")
+
+    return payload
