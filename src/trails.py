@@ -19,7 +19,6 @@ DOWNLOAD_FIELDS = [
     "County",
     "Peninsula",
     "Hiking",
-    "TrailApprovalStatus",
     "TrailUseCategory",
     "OpenClosedStatusNonmotor",
     "SurfaceType",
@@ -203,3 +202,6 @@ def validate_download(trails, expected_object_ids):
             f"{len(unexpected_ids)} unexpected object IDs appeared. "
             f"First unexpected IDs: {preview}"
         )
+
+def replace_missing_placeholders(trails):
+    """Takes placeholder values for missing values and replace them with pd.na"""
