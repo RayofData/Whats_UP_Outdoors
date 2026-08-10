@@ -28,6 +28,12 @@ DOWNLOAD_FIELDS = [
     "SegmentLengthMiles"
 ]
 
+DROP_COLUMNS = [
+    "Peninsula",
+    "DNRTrail",
+    "Hiking"
+]
+
 PLACEHOLDER_VALUES = {
     "",
     "-1",
@@ -234,3 +240,32 @@ def replace_missing_placeholders(trails):
             pd.NA
         )
     return cleaned
+
+def prep_columns(trails):
+    """Drop unused columns and create the trail grouping key."""
+
+    cleaned_trails = trails.drop(
+        columns=DROP_COLUMNS
+    ).copy()
+
+    cleaned_trails["TrailGroupName"] = (
+        cleaned_trails["County"]
+        + " | "
+        + cleaned_trails["HikingName"]
+    )
+
+    return cleaned_trails
+
+
+def aggregate_column(column):
+    """Summarize string columns values for a grouped trail."""
+
+    valid_values = column.dropna().unique()
+
+    if len(valid_values) == 0:
+        return "Unknown"
+    
+    if len(valid_values) == 1:
+        return valid_values[0]
+    
+    return "Varies"
