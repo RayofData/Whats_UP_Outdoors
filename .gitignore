@@ -16,7 +16,6 @@ reports/*
 !reports/.gitkeep
 
 # Bundle the final app-ready demo data
-!data/processed/dnr_up_hiking_trails_grouped.parquet
 !data/processed/inaturalist_up_fall_observations.parquet
 
 # Jupyter temporary files
