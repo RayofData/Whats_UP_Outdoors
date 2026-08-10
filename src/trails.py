@@ -15,7 +15,6 @@ PLACEHOLDER_VALUES = {
     "99",
     "-99",
     "Unspecified",
-    "Unknown",
     "None",
     "N/A",
     "<NA>",
@@ -127,10 +126,10 @@ def replace_missing_placeholders(trails):
     ).columns
 
     for column in text_columns:
-        cleaned_trails = cleaned[column].astype("string").str.strip()
+        cleaned_column = cleaned[column].astype("string").str.strip()
 
-        cleaned[column] = cleaned_trails.mask(
-            cleaned_trails.isin(PLACEHOLDER_VALUES),
+        cleaned[column] = cleaned_column.mask(
+            cleaned_column.isin(PLACEHOLDER_VALUES),
             pd.NA
         )
     return cleaned
@@ -158,9 +157,9 @@ def combine_unique(values):
         }
     )
 
-    return ", ".join(unique_values) if unique_values else pd.NA
+    return ", ".join(unique_values) if unique_values else "Unknown"
 
-def normalize_trail_names(county, hiking_name):
+def normalize_trail_name(county, hiking_name):
     """Return the canonical hiking-trail name for known aliases."""
 
     return TRAIL_NAME_ALIASES.get(
@@ -176,7 +175,7 @@ def prep_columns(trails):
     ).copy()
 
     cleaned_trails["HikingName"] = [
-        normalize_trail_names(county, hiking_name)
+        normalize_trail_name(county, hiking_name)
         for county, hiking_name in zip(
             cleaned_trails["County"],
             cleaned_trails["HikingName"]
@@ -242,7 +241,7 @@ def group_trails(trails):
     return grouped_trails
 
 def add_length_category(trails):
-    """Add short, medium, and long trail-length categories."""
+    """Add short, medium, and long trail-length categories using DNR-reported trail lengths."""
 
     categorized = trails.copy()
 

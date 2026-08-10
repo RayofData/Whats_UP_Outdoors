@@ -1,3 +1,5 @@
+"""Run the offline DNR trail preparation pipeline."""
+
 import json
 from pathlib import Path
 
@@ -24,6 +26,11 @@ REPORT_DIR = Path("reports")
 OUTPUT_PATH = RAW_DIR / "dnr_up_hiking_trails.geojson"
 PROFILE_PATH = REPORT_DIR / "dnr_up_hiking_trails_profile.json"
 
+PROCESSED_DIR = Path("data/processed")
+
+PROCESSED_PATH = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
+
+
 
 def main():
     try:
@@ -32,7 +39,7 @@ def main():
     except OSError as exc:
         raise RuntimeError(
             f"Could not create output directories: {exc}"
-        )
+        ) from exc
 
     print("Requesting all matching object IDs...")
     object_ids = get_object_ids()
@@ -87,7 +94,24 @@ def main():
     grouped_trails = group_trails(prepared_trails)
     final_trails = add_length_category(grouped_trails)
 
-    print("\nProcessed trail data:")
+    try: 
+        RAW_DIR.mkdir(parents=True, exist_ok=True)
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not create output directories: {exc}"
+        ) from exc
+
+    try:
+        final_trails.to_parquet(PROCESSED_PATH, index=False)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not save processed trails to {PROCESSED_PATH}: {exc}"
+        ) from exc
+
+    print(f"\nProcessed data saved to : {PROCESSED_PATH}")
+    print("Processed trail data:")
     print(f"Grouped trails: {len(final_trails):,}")
     print(f"CRS: {final_trails.crs}")
     print(f"Columns: {list(final_trails.columns)}")
@@ -101,6 +125,7 @@ def main():
             [
                 "TrailGroupName",
                 "ReportedLengthMiles",
+                "LengthCategory"
                 "TrailWidth",
                 "SurfaceTypes",
                 "AccessibilityValues",

@@ -43,9 +43,10 @@ Raw-data cleaning and spatial calculations must be implemented outside `app.py`.
 
 ### Core modules
 
-Place the project modules under `src/whats_up_outdoors/`:
+Place the project modules directly under `src/`:
 
-- `trails.py`: DNR download, validation, cleaning, grouping, and trail summaries
+- `dnr.py`: Michigan DNR API requests, batch downloading, raw-download validation, and profiling
+- `trails.py`: Trail cleaning, normalization, grouping, and trail summaries
 - `locations.py`: ZIP-code normalization, validation, and `pgeocode` coordinate lookup
 - `inaturalist.py`: Recent API requests, historical-data loading, taxon mapping, and species summaries
 - `spatial.py`: Coordinate reference system transformations, length calculations, point-to-geometry distance, and spatial filtering
@@ -281,76 +282,49 @@ Recent and historical summaries must remain visually distinct.
 
 ## 9. Testing Requirements
 
-Use `pytest` with small, deterministic fixtures.
+Use a small `pytest` suite focused on critical transformation, API-validation, and geospatial logic.
 
-Automated tests must not depend on live external APIs.
+Tests must use small, deterministic local fixtures and must not depend on live external APIs.
 
-### Unit tests
+The MVP should target approximately **8 tests total**. Add a test only when it protects an important business rule, spatial calculation, validation behavior, or unfamiliar implementation technique.
 
-Cover:
+### `test_trails.py`
 
-- Trail-name normalization
-- Required-column validation
-- Width aggregation
-- Surface aggregation
-- Status aggregation
-- ZIP-code normalization and validation
-- Taxon mapping
-- Species ranking
-- Date tie-breaking
-- Missing-value behavior
+Target approximately four tests covering the most important trail-processing behavior:
 
-### Geospatial tests
+- Placeholder-value cleanup
+- Trail-name normalization and known aliases
+- Width aggregation, including one value, `Varies`, and `Unknown`
+- Grouping behavior, including unique group keys and preservation of segment counts
 
-Cover:
+### `test_dnr.py`
 
-- `EPSG:4326` to `EPSG:3078` conversion
-- `EPSG:3078` to `EPSG:4326` conversion
-- Trail-length calculations
-- True point-to-geometry nearest distance
-- Confirmation that centroids are not used for proximity
-- Radius filtering
-- Two-mile observation filtering
-- Nearest-first sorting
-- Five-trail result limits
-- Exclusion of observations with missing or invalid coordinates
+Target approximately two tests covering DNR-specific logic:
 
-### API tests
+- Batch generation or raw-download validation
+- One representative mocked API behavior or validation failure
 
-Use mocked DNR and iNaturalist responses to cover:
+Do not create a large matrix of HTTP error tests for the MVP.
 
-- Successful responses
-- Empty responses
-- Invalid or incomplete data
-- HTTP 4xx and 5xx responses
-- Timeouts
-- Connection failures
-- Historical-data fallback when the recent iNaturalist request fails
-- Preservation of the raw DNR response before processing
+### `test_spatial.py`
 
-### Integration tests
+Target approximately two tests covering core geospatial behavior:
 
-Cover:
+- Projected trail-length calculation using `EPSG:3078`
+- True point-to-geometry distance calculation
 
-- Raw DNR fixture to processed GeoParquet output
-- Processed trail data loading
-- ZIP-code point to filtered and sorted trail results
-- Selected trail to filtered historical observation summary
-- Selected trail to map-ready trail and observation geometries
-- Correct orange star and blue X marker assignments
-- Dashboard behavior when either recent or historical observations are unavailable
+Additional ZIP-code or iNaturalist tests may be added later only if a specific behavior proves important enough to justify them. Keep the complete MVP suite intentionally small.
 
-Organize tests by module:
+Organize tests as:
 
 ```text
 tests/
-├── conftest.py
 ├── test_trails.py
-├── test_locations.py
-├── test_inaturalist.py
-├── test_spatial.py
-└── test_pipeline.py
+├── test_dnr.py
+└── test_spatial.py
 ```
+
+A shared `conftest.py` is optional and should be added only if fixtures are duplicated across test files.
 
 The complete test suite must run with:
 
