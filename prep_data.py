@@ -8,7 +8,8 @@ from src.trails import (
     download_all_features,
     get_object_ids,
     validate_download,
-    replace_missing_placeholders
+    replace_missing_placeholders,
+    prep_columns
 )
 
 
@@ -76,8 +77,8 @@ def main():
     print(f"GeoJSON saved to: {OUTPUT_PATH}")
     print(f"Profile saved to: {PROFILE_PATH}")
 
-    cleaned_trails = replace_missing_placeholders(trails)
-
+    cleaned_trails = replace_missing_placeholders(trails)   
+    prepared_trails = prep_columns(cleaned_trails)
 
 if __name__ == "__main__":
     main()
