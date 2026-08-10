@@ -28,10 +28,11 @@ The project uses two executable entry points:
 - `prep_data.py` downloads and processes Michigan DNR trail data.
 - `app.py` runs the Streamlit interface.
 
-Reusable code is organized under `src/whats_up_outdoors/`:
+Reusable code is organized under `src/`:
 
 ```text
-src/whats_up_outdoors/
+src/
+├── dnr.py
 ├── trails.py
 ├── locations.py
 ├── inaturalist.py
@@ -48,26 +49,25 @@ whats-up-outdoors/
 ├── prep_data.py
 ├── spec.md
 ├── assets/
-│   └── banner.png
+│   ├──banner.png
+│   └── map_up.jpg
 ├── data/
 │   ├── raw/
 │   └── processed/
 ├── src/
-│   └── whats_up_outdoors/
-│       ├── __init__.py
-│       ├── trails.py
-│       ├── locations.py
-│       ├── inaturalist.py
-│       └── spatial.py
+│   ├── __init__.py
+│   ├── dnr.py
+│   ├── trails.py
+│   ├── locations.py
+│   ├── inaturalist.py
+│   └── spatial.py
 ├── tests/
-│   ├── conftest.py
 │   ├── test_trails.py
-│   ├── test_locations.py
-│   ├── test_inaturalist.py
-│   ├── test_spatial.py
-│   └── test_pipeline.py
-├── .gitignore
+│   ├── test_dnr.py
+│   └── test_spatial.py
 ├── README.md
+├── SPEC.md
+├── AI_USE_DISCLOSURE.md
 └── requirements.txt
 ```
 
@@ -142,4 +142,4 @@ Python, pandas, GeoPandas, Shapely, Streamlit, Folium, Requests, PyArrow, pgeoco
 - Recent observation availability depends on the iNaturalist API.
 - The app does not provide navigation, safety guidance, or wildlife guarantees.
 
-See [`spec.md`](spec.md) for the complete MVP requirements.
+See [`SPEC.md`](SPEC.md) for the complete MVP requirements.
