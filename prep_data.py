@@ -3,14 +3,17 @@ from pathlib import Path
 
 import geopandas as gpd 
 
-from src.trails import (
+from src.dnr import (
     build_profile,
     download_all_features,
     get_object_ids,
     validate_download,
-    replace_missing_placeholders,
+)
+
+from src.trails import (
+    group_trails,
     prep_columns,
-    group_trails
+    replace_missing_placeholders,
 )
 
 
