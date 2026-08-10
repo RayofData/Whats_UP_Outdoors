@@ -1,3 +1,5 @@
+"""Download, validate, and profile Michigan DNR trail data."""
+
 import requests
 
 LAYER_URL = (

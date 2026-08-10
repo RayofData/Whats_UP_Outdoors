@@ -14,6 +14,7 @@ from src.trails import (
     group_trails,
     prep_columns,
     replace_missing_placeholders,
+    add_length_category
 )
 
 
@@ -84,6 +85,33 @@ def main():
     cleaned_trails = replace_missing_placeholders(trails)   
     prepared_trails = prep_columns(cleaned_trails)
     grouped_trails = group_trails(prepared_trails)
+    final_trails = add_length_category(grouped_trails)
+
+    print("\nProcessed trail data:")
+    print(f"Grouped trails: {len(final_trails):,}")
+    print(f"CRS: {final_trails.crs}")
+    print(f"Columns: {list(final_trails.columns)}")
+
+    print("\nLength categories: ")
+    print(final_trails["LengthCategory"].value_counts(dropna=False))
+
+    print("\nSample trails:")
+    print(
+        final_trails[
+            [
+                "TrailGroupName",
+                "ReportedLengthMiles",
+                "TrailWidth",
+                "SurfaceTypes",
+                "AccessibilityValues",
+                "TrailStatuses"
+            ]
+        ]
+    .head()
+    .to_string(index=False)
+)
+
+
 
 if __name__ == "__main__":
     main()

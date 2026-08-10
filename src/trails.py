@@ -1,3 +1,5 @@
+"""Clean, normalize, group, and summarize trail data."""
+
 import pandas as pd 
 
 DROP_COLUMNS = [
@@ -238,3 +240,18 @@ def group_trails(trails):
 ]
 
     return grouped_trails
+
+def add_length_category(trails):
+    """Add short, medium, and long trail-length categories."""
+
+    categorized = trails.copy()
+
+    categorized["LengthCategory"] = pd.cut(
+        categorized["ReportedLengthMiles"],
+        bins=[0,2,7, float("inf")],
+        labels = ["Short", "Medium", "Long"],
+        include_lowest=True,
+        right=True
+    )
+
+    return categorized
