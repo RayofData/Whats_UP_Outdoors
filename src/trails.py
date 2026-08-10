@@ -348,6 +348,18 @@ def aggregate_column(column):
     
     return "Varies"
 
+def combine_unique(values):
+    """Combine unique non-missing values into one readable string."""
+    unique_values = sorted(
+        {
+            str(value).strip()
+            for value in values.dropna()
+            if str(value).strip()
+        }
+    )
+
+    return " | ".join(unique_values) if unique_values else pd.NA
+
 def normalize_trail_names(county, hiking_name):
     """Return the canonical hiking-trail name for known aliases."""
 
@@ -378,3 +390,36 @@ def prep_columns(trails):
     )
 
     return cleaned_trails
+
+
+def group_trails(trails):
+    """Group trail segments by county and trail name"""
+    
+    grouped_trails = (
+        trails.dissolve(
+            by="TrailGroupName",
+            aggfunc={
+                "HikingName": "first",
+                "County": "first",
+                "FacilityName": combine_unique,
+                "SegmentLengthMiles": "sum",
+                "SurfaceType": combine_unique,
+                "OpenClosedStatusNonmotor": combine_unique,
+                "ADAAccessible": combine_unique,
+                "OBJECTID": "count"
+            },
+        )
+        .reset_index()
+        .rename(
+            columns={
+                "SegmentLengthMiles": "TrailLengthMiles",
+                "SurfaceType": "SurfaceTypes",
+                "OpenClosedStatusNonmotor": "TrailStatuses",
+                "TrailWidthFeet": "TrailWidth",
+                "ADAAccessible": "AccessibilityValues",
+                "OBJECTID": "SegmentCount",            
+            }
+        )
+    )
+
+    return grouped_trails

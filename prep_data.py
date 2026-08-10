@@ -9,7 +9,8 @@ from src.trails import (
     get_object_ids,
     validate_download,
     replace_missing_placeholders,
-    prep_columns
+    prep_columns,
+    group_trails
 )
 
 
@@ -79,6 +80,7 @@ def main():
 
     cleaned_trails = replace_missing_placeholders(trails)   
     prepared_trails = prep_columns(cleaned_trails)
+    grouped_trails = group_trails(prepared_trails)
 
 if __name__ == "__main__":
     main()
