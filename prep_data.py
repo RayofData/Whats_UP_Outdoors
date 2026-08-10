@@ -8,6 +8,7 @@ from src.trails import (
     download_all_features,
     get_object_ids,
     validate_download,
+    replace_missing_placeholders
 )
 
 
@@ -74,6 +75,9 @@ def main():
     print("Geometry types:\n" f"{trails.geometry.geom_type.value_counts()}")
     print(f"GeoJSON saved to: {OUTPUT_PATH}")
     print(f"Profile saved to: {PROFILE_PATH}")
+
+    cleaned_trails = replace_missing_placeholders(trails)
+
 
 if __name__ == "__main__":
     main()

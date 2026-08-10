@@ -1,4 +1,5 @@
 import requests
+import pandas as pd 
 
 LAYER_URL = (
     "https://gisagodnr.state.mi.us/arcgis/rest/services/"
@@ -26,6 +27,20 @@ DOWNLOAD_FIELDS = [
     "ADAAccessible",
     "SegmentLengthMiles"
 ]
+
+PLACEHOLDER_VALUES = {
+    "",
+    "-1",
+    "-2",
+    "99",
+    "-99",
+    "Unspecified",
+    "Unknown",
+    "None",
+    "N/A",
+    "<NA>",
+    "NA"
+}
 
 def request_json(params):
     """Request JSON from the ArcGIS service and validate the response."""
@@ -203,4 +218,19 @@ def validate_download(trails, expected_object_ids):
         )
 
 def replace_missing_placeholders(trails):
-    """Takes placeholder values for missing values and replace them with pd.na"""
+    """Replace text placeholder values  with pd.NA and return a clean copy."""
+
+    cleaned = trails.copy()
+
+    text_columns = cleaned.select_dtypes(
+        include=["object", "string"]
+    ).columns
+
+    for column in text_columns:
+        cleaned_trails = cleaned[column].astype("string").str.strip()
+
+        cleaned[column] = cleaned_trails.mask(
+            cleaned_trails.isin(PLACEHOLDER_VALUES),
+            pd.NA
+        )
+    return cleaned
