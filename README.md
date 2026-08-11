@@ -36,7 +36,7 @@ src/
 ├── trails.py
 ├── locations.py
 ├── inaturalist.py
-└── spatial.py
+└── geospatial.py
 ```
 
 Spatial calculations use Michigan GeoRef (`EPSG:3078`). Folium map geometry uses WGS 84 (`EPSG:4326`).
@@ -61,7 +61,7 @@ whats-up-outdoors/
 │   ├── trails.py
 │   ├── locations.py
 │   ├── inaturalist.py
-│   └── spatial.py
+│   └── geospatial.py
 ├── tests/
 │   ├── test_trails.py
 │   ├── test_dnr.py

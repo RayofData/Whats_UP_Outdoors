@@ -49,7 +49,7 @@ Place the project modules directly under `src/`:
 - `trails.py`: Trail cleaning, normalization, grouping, and trail summaries
 - `locations.py`: ZIP-code normalization, validation, and `pgeocode` coordinate lookup
 - `inaturalist.py`: Recent API requests, historical-data loading, taxon mapping, and species summaries
-- `spatial.py`: Coordinate reference system transformations, length calculations, point-to-geometry distance, and spatial filtering
+- `geospatial.py`: Coordinate reference system transformations, length calculations, point-to-geometry distance, and spatial filtering
 
 Add another module only when an existing module becomes difficult to understand or develops unrelated responsibilities.
 
