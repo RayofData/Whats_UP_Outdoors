@@ -125,7 +125,7 @@ def main():
             [
                 "TrailGroupName",
                 "ReportedLengthMiles",
-                "LengthCategory"
+                "LengthCategory",
                 "TrailWidth",
                 "SurfaceTypes",
                 "AccessibilityValues",

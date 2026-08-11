@@ -55,8 +55,9 @@ whats-up-outdoors/
 │   ├── raw/
 │   └── processed/
 ├── src/
+│   ├── apis
+│   │   ├── dnr_api.py
 │   ├── __init__.py
-│   ├── dnr.py
 │   ├── trails.py
 │   ├── locations.py
 │   ├── inaturalist.py
