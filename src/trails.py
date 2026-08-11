@@ -222,22 +222,6 @@ def group_trails(trails):
         )
     )
 
-    grouped_trails = grouped_trails[
-    [
-        "TrailGroupName",
-        "HikingName",
-        "County",
-        "ReportedLengthMiles",
-        "TrailWidth",
-        "SurfaceTypes",
-        "AccessibilityValues",
-        "TrailStatuses",
-        "FacilityName",
-        "SegmentCount",
-        "geometry",
-    ]
-]
-
     return grouped_trails
 
 def add_length_category(trails):
