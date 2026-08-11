@@ -94,6 +94,23 @@ def main():
     grouped_trails = group_trails(prepared_trails)
     final_trails = add_length_category(grouped_trails)
 
+    final_trails = final_trails[
+    [
+        "TrailGroupName",
+        "HikingName",
+        "County",
+        "LengthCategory",
+        "ReportedLengthMiles",
+        "TrailWidth",
+        "SurfaceTypes",
+        "AccessibilityValues",
+        "TrailStatuses",
+        "FacilityName",
+        "SegmentCount",
+        "geometry",
+    ]
+]
+
     try: 
         RAW_DIR.mkdir(parents=True, exist_ok=True)
         REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -125,7 +142,7 @@ def main():
             [
                 "TrailGroupName",
                 "ReportedLengthMiles",
-                "LengthCategory"
+                "LengthCategory",
                 "TrailWidth",
                 "SurfaceTypes",
                 "AccessibilityValues",
