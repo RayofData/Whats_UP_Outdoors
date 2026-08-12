@@ -1,251 +1,288 @@
 # What’s UP Outdoors: Upper Peninsula Trail Explorer
 
-**Status:** MVP baseline  
-**Version:** 0.5  
-**Application:** Local Streamlit application with a standalone data-preparation pipeline
+**Status:** MVP in development  
+**Version:** 0.7  
+**Application:** Local Streamlit application with standalone DNR and historical-observation preparation workflows
 
 ## 1. Purpose
 
 **What’s UP Outdoors** helps users discover hiking trails in Michigan’s Upper Peninsula and review nearby iNaturalist observations.
 
-- **Primary goal:** Demonstrate a documented, reproducible, tested, and maintainable geospatial data workflow using Python, pandas, GeoPandas, and Parquet.
-- **Secondary goal:** Provide a clean trail-discovery interface with an interactive map and trail-results table.
+- **Primary goal:** Demonstrate a reproducible, tested, and maintainable geospatial data workflow using Python, pandas, GeoPandas, Shapely, APIs, and Parquet.
+- **Secondary goal:** Provide a clean local Streamlit interface for ZIP-based trail discovery, mapping, trail details, wildlife observations, and session-based favorites.
 
-## 2. Architecture and Technology
-
-The project uses two executable entry points supported by focused Python modules.
+## 2. Architecture
 
 ### Entry points
 
-#### `prep_data.py`: Offline data preparation
+1. **`prep_data.py`**  
+   Downloads Michigan DNR trail data, saves the raw response under `data/raw/`, validates and processes the trails, and writes the app-ready DNR GeoParquet locally.
 
-`prep_data.py` must:
+2. **`prep_historical_observations.py`**  
+   One-time reproducibility script for converting the manually downloaded historical iNaturalist CSV into:
 
-- Download raw Michigan DNR trail data from the DNR API.
-- Save the unmodified response under `data/raw/`.
-- Run trail validation, cleaning, grouping, and spatial processing.
-- Save the processed trail dataset under `data/processed/` as GeoParquet.
+   `data/processed/inaturalist_historical_fall_observations.parquet`
 
-It must not download recent or historical iNaturalist data.
+   The raw CSV remains local and Git-ignored. The processed historical Parquet is committed to the repository.
 
-#### `app.py`: Streamlit interface
-
-`app.py` must:
-
-- Define the interactive user flow.
-- Load processed trail data.
-- Load the committed historical iNaturalist dataset.
-- Handle ZIP-code location searches.
-- Fetch recent iNaturalist observations after a trail is selected.
-- Render Folium maps and data summaries.
-
-Raw-data cleaning and spatial calculations must be implemented outside `app.py`.
+3. **`app.py`**  
+   Defines Streamlit UI flow and coordinates module calls. It does not directly perform raw-data cleaning, HTTP requests, spatial calculations, or Folium map construction.
 
 ### Core modules
 
-Place the project modules directly under `src/`:
+```text
+src/
+├── apis/
+│   ├── dnr_api.py
+│   └── inaturalist_api.py
+├── trails.py
+├── locations.py
+├── spatial.py
+├── inaturalist.py
+└── maps.py
+```
 
-- `dnr.py`: Michigan DNR API requests, batch downloading, raw-download validation, and profiling
-- `trails.py`: Trail cleaning, normalization, grouping, and trail summaries
-- `locations.py`: ZIP-code normalization, validation, and `pgeocode` coordinate lookup
-- `inaturalist.py`: Recent API requests, historical-data loading, taxon mapping, and species summaries
-- `spatial.py`: Coordinate reference system transformations, length calculations, point-to-geometry distance, and spatial filtering
+Responsibilities:
 
-Add another module only when an existing module becomes difficult to understand or develops unrelated responsibilities.
+- `apis/dnr_api.py`: DNR HTTP requests, batching, service-response validation, raw-download validation, and profiling.
+- `apis/inaturalist_api.py`: iNaturalist HTTP requests, pagination, parameters, and API-response validation.
+- `trails.py`: trail cleaning, normalization, grouping, aggregation, and length categories.
+- `locations.py`: ZIP normalization, validation, `pgeocode` lookup, and user point creation.
+- `spatial.py`: CRS transformations, distance calculations, radius filtering, nearest-trail filtering, and related spatial operations.
+- `inaturalist.py`: historical Parquet loading, recent-observation normalization, taxon mapping, and species summaries.
+- `maps.py`: Folium map construction.
 
-### Technology stack
+`*_api.py` modules contain HTTP/service-response logic only. They must not perform application data cleaning, spatial calculations, map construction, or Streamlit rendering.
 
-- **Core:** `streamlit`, `pandas`, `geopandas`, `folium`, `streamlit-folium`, `requests`, `pgeocode`, `pyarrow`
-- **Testing:** `pytest`
+### Technology
 
-Use `python-dotenv` only if environment variables or credentials are required.
+- Core: `streamlit`, `pandas`, `geopandas`, `shapely`, `folium`, `streamlit-folium`, `requests`, `pgeocode`, `pyarrow`
+- Testing: `pytest`
+- Do not add dependencies without explicit approval.
 
-Do not add dependencies unless they provide a clear benefit that cannot reasonably be handled by the existing stack.
-
-## 3. Project Data Policy
-
-### Committed data
-
-The repository must include the fixed historical iNaturalist dataset for September and October 2015 through 2025.
-
-This dataset is downloaded manually before development and is never refreshed by `prep_data.py`.
-
-### Locally generated data
-
-The following data must be excluded from Git:
-
-- `data/raw/`: Raw Michigan DNR API responses
-- `data/processed/`: Processed DNR trail GeoParquet files
-- Runtime API-response caches
-
-## 4. Data Sources
+## 3. Data Policy and Sources
 
 ### Michigan DNR trails
 
-- **Layer endpoint:** `https://gisagodnr.state.mi.us/arcgis/rest/services/DNR/DNRTrailsOPENDATA/MapServer/2`
-- **Required fields:** Geometry, trail name, county, width, surface type, trail status, and relevant source identifiers
-- **Scope:** Hiking trails in Michigan’s Upper Peninsula
-- **Status rule:** Preserve the DNR-provided status value. Display `Unknown` when no status is available. Do not derive custom status values.
+Source:
 
-### iNaturalist observations
+`https://gisagodnr.state.mi.us/arcgis/rest/services/DNR/DNRTrailsOPENDATA/MapServer/2`
 
-- **Recent:** Observations from the previous 14 days, fetched from the iNaturalist REST API at runtime after a trail is selected
-- **Historical:** Fixed September and October observations from 2015 through 2025
+- Scope: Upper Peninsula hiking trails.
+- Raw API responses are local and Git-ignored.
+- Processed DNR GeoParquet is generated locally and is not committed.
+- Preserve DNR-provided trail status values. Use `Unknown` when no usable status is available.
 
-### ZIP-code geocoding
+### Historical iNaturalist observations
 
-Use `pgeocode` to convert United States ZIP codes into latitude and longitude.
+- Manually downloaded fixed export.
+- Geographic scope is already centered on the Upper Peninsula area.
+- May include nearby Wisconsin and Canadian observations.
+- September–October, 2015–2025.
+- Raw CSV remains local and Git-ignored.
+- Processed Parquet is committed.
 
-## 5. Coordinate Reference Systems
+### Recent iNaturalist observations
 
-### Spatial processing
+- Fetched at runtime from the iNaturalist REST API.
+- Uses the previous 21 days.
 
-Use **Michigan GeoRef (`EPSG:3078`)** for:
+### ZIP geocoding
 
-- Trail-length calculations
-- User-to-trail distance calculations
-- Observation-to-trail distance calculations
-- Radius filtering
+Use `pgeocode` to resolve valid United States ZIP codes into latitude and longitude.
 
-Convert displayed lengths and distances from meters to miles.
+## 4. Spatial Rules
 
-### Mapping
+Use:
 
-Use **WGS 84 (`EPSG:4326`)** for all Folium map geometries.
+- **WGS 84 (`EPSG:4326`)** for ZIP coordinates, iNaturalist coordinates, and Folium map rendering.
+- **Michigan GeoRef (`EPSG:3078`)** for distance calculations.
 
-Reproject geometries to `EPSG:4326` only after spatial calculations are complete.
+Before distance calculations:
 
-### CRS rules
+1. Confirm or define the known source CRS.
+2. Reproject with `.to_crs("EPSG:3078")`.
+3. Use the actual trail geometry, not a centroid.
+4. Convert calculated meters to miles.
 
-- Confirm the source CRS before reprojection.
-- Do not assign a CRS without supporting source metadata or documentation.
-- Do not use trail centroids as substitutes for point-to-geometry nearest-distance calculations.
+### Required distance behavior
 
-## 6. Data-Preparation Requirements
+- ZIP-to-trail distance: shortest distance from ZIP point to actual trail line or multiline geometry.
+- Observation-to-trail distance: shortest distance from observation point to actual selected-trail geometry.
+- A qualifying observation has a shortest point-to-trail distance of **≤ 2 miles in `EPSG:3078`**.
+
+The exact iNaturalist API query-area construction is an implementation detail. The final local two-mile spatial filter is authoritative.
+
+## 5. DNR Trail Preparation
 
 `prep_data.py` must:
 
-1. Fetch DNR trail data from the API.
-2. Save the raw response under `data/raw/`.
-3. Validate required columns.
-4. Confirm that geometries are present and valid.
-5. Confirm the source CRS before reprojection.
-6. Filter the data to Upper Peninsula hiking trails.
-7. Group raw segments by normalized trail name and county.
-8. Calculate grouped trail length in miles using `EPSG:3078`.
-9. Aggregate width, surface, and status values.
-10. Export a lean GeoParquet dataset under `data/processed/`.
+1. Download matching DNR trail features.
+2. Save the raw response locally.
+3. Validate the download.
+4. Replace known placeholder values defined in `PLACEHOLDER_VALUES`.
+5. Apply the existing trail-name normalization.
+6. Group trail segments by normalized trail name and county.
+7. Aggregate trail attributes.
+8. Add trail length categories.
+9. Save the local app-ready DNR GeoParquet.
 
-The same normalized trail name in different counties must produce separate grouped trails.
+Repeated trail names in different counties remain separate trails.
 
-Repeated trail names must not automatically be treated as duplicate source records.
+### Aggregation rules
 
-Each grouped trail must retain:
+- **Length:** sum DNR `SegmentLengthMiles` into `ReportedLengthMiles`.
+- **Length category:**  
+  - Short: ≤ 2 miles  
+  - Medium: > 2 and ≤ 7 miles  
+  - Long: > 7 miles
+- **Width:** one value if all valid segments agree, `Varies` if they differ, `Unknown` if none are valid.
+- **Surface:** one value if all valid segments agree; otherwise comma-separated unique values; `Unknown` if none are valid.
+- **Status:** preserve DNR values; use one value if all valid segments agree; otherwise comma-separated unique values; `Unknown` if none are valid.
 
-- Trail name
-- County
-- Merged geometry
-- Total calculated length in miles
-- Width summary
-- Surface summary
-- Status summary
-- Relevant source identifiers
+Geometry-derived trail lengths were manually audited against DNR-reported values. Production uses `ReportedLengthMiles`.
 
-### Width aggregation
+## 6. Historical Observation Preparation
 
-- Use one value when all valid segment values agree.
-- Use `Varies` when valid values differ.
-- Use `Unknown` when no valid value is available.
+`prep_historical_observations.py` is a one-time reproducibility script and is not part of normal app startup or `prep_data.py`.
 
-### Surface aggregation
+The source export is already geographically scoped and already limited to September–October 2015–2025.
 
-- Use one value when all valid segment values agree.
-- Use a comma-separated list of distinct values when multiple surfaces are present.
-- Use `Unknown` when no valid value is available.
+The script must:
 
-### Status aggregation
+- validate that dates remain within September–October 2015–2025
+- keep quality grades `research` and `needs_id`
+- keep only supported taxon groups
+- require a species-level scientific name
+- require valid latitude and longitude
+- exclude obscured coordinates
+- remove duplicate observation IDs
+- retain positional accuracy without enforcing a hard cutoff
+- preserve nearby Wisconsin and Canadian observations
+- avoid applying an additional Michigan-only or UP-boundary filter
 
-- Preserve the DNR-provided value.
-- Use one value when all valid segment values agree.
-- Use a comma-separated list of distinct values when statuses differ.
-- Use `Unknown` when no valid value is available.
+Normalize to:
 
-## 7. Location Search and Spatial Filtering
+```text
+observation_id
+observed_on
+common_name
+scientific_name
+iconic_taxon
+thumbnail_url
+longitude
+latitude
+positional_accuracy
+```
 
-The user must enter a United States ZIP code and select one search radius:
+## 7. ZIP Search and Nearby Trails
+
+The user may enter any valid U.S. ZIP code and choose:
 
 - 10 miles
 - 25 miles
 - 50 miles
 
-The application must:
+Search flow:
 
-1. Normalize and validate the ZIP-code input.
-2. Resolve latitude and longitude using `pgeocode`.
-3. Create a point geometry in `EPSG:4326`.
-4. Reproject the point to `EPSG:3078`.
-5. Calculate the shortest distance from the point to each trail geometry.
-6. Retain trails within the selected radius.
-7. Sort matching trails from nearest to farthest.
-8. Return no more than five trails.
+1. Validate and normalize the ZIP.
+2. Resolve lat/lon with `pgeocode`.
+3. Create the ZIP point in `EPSG:4326`.
+4. Reproject the ZIP point and trails to `EPSG:3078`.
+5. Calculate true point-to-trail distance.
+6. Keep trails inside the selected radius.
+7. Sort nearest to farthest.
+8. Return at most 20 trails.
 
-Display a clear user-facing message when:
+### Search outcomes
 
-- The ZIP code is missing or invalid.
-- `pgeocode` cannot resolve the ZIP code.
-- No Upper Peninsula trails are found within the selected radius.
+- **Valid ZIP + matches:** show up to 20 nearest trails.
+- **Valid ZIP + no matches:** show an empty table and a normal informational message such as `No trails found within 25 miles.`
+- **Invalid or unresolved ZIP:** show validation feedback and do not run the distance search.
+- Expected user input errors must not expose raw stack traces.
 
-Expected input errors must not expose raw stack traces.
+## 8. Streamlit UI
 
-## 8. Selected-Trail Dashboard and iNaturalist Integration
+Use `st.session_state` for favorites and other state that must persist across Streamlit reruns.
 
-When the user selects a trail, render the dashboard in the following order:
+### Sidebar
 
-1. Selected-trail heading and attributes
-2. Selected-trail observation map
-3. Recent taxon summaries
-4. Historical taxon summaries
+- Display session favorites.
+- Provide CSV export for favorites.
+- Export fields exactly:
+  - Trail
+  - County
+  - Length
+  - Surface
+  - Width
 
-### Selected-trail attributes
+### Tab 1: Trails
 
-Display:
+Before ZIP search:
 
-- Trail name
+- display all grouped UP trails
+
+After ZIP search:
+
+- display up to 20 matching trails
+- sort nearest first
+- include `Distance from ZIP`
+- show the number of matching trails
+- total UP trail count may also be displayed if it fits naturally
+
+Displayed fields:
+
+- Trail
 - County
-- Status
-- Total length in miles
-- Surface
+- Length Category
+- Length (Miles)
 - Width
-- Distance from the entered ZIP code in miles
+- Surface
+- Status
+- Distance from ZIP when applicable
 
-### Selected-trail observation map
+### Trail selection
 
-Display a Folium map that:
+Tab 1 is the single source of truth for selected trail state.
 
-- Shows the complete selected-trail geometry in `EPSG:4326`.
-- Is centered and zoomed to the selected trail and qualifying observations.
-- Shows observations within two miles of the trail geometry.
-- Uses orange star markers for recent observations.
-- Uses blue X markers for historical observations.
-- Includes a legend identifying both marker types.
+- The user selects a trail in Tab 1.
+- Store the selected trail in `st.session_state`.
+- ZIP search is not required before selecting a trail.
+- Tab 3 must not contain a separate competing trail selector.
 
-Observation-to-trail distance must be calculated in `EPSG:3078` using true point-to-geometry distance.
+### Tab 2: Map
 
-Only qualifying observations may appear on the map or in the summaries.
+Before ZIP search:
 
-If the recent API request fails:
+- display all grouped UP trails
 
-- Display a clear error message.
-- Continue rendering the trail and historical observations.
-- Do not crash the dashboard.
+After ZIP search:
 
-If either observation period has no qualifying results, continue displaying the trail and any available observations from the other period.
+- display the same maximum-20 result set shown in Tab 1
+- include the ZIP reference point when useful
 
-Exclude observations with missing or invalid coordinates without crashing the application.
+### Tab 3: Trail Details
 
-### Taxon groups
+If no trail has been selected in Tab 1, show a simple prompt to select one.
 
-Use the following mapping as the single source of truth:
+For the selected trail, display:
+
+- trail name
+- county
+- status
+- `ReportedLengthMiles`
+- length category
+- surface
+- width
+- ZIP distance if available for the current search
+- selected-trail observation map
+- recent species summaries
+- historical species summaries
+- add/remove favorite control
+
+## 9. iNaturalist Integration
+
+Use this mapping in `inaturalist.py` as the single source of truth:
 
 ```python
 TAXON_GROUPS = {
@@ -258,95 +295,100 @@ TAXON_GROUPS = {
 }
 ```
 
-Observations outside these groups must not appear in the species summaries.
+Observations outside these groups do not appear in species summaries.
+
+### Recent observations
+
+- Fetch the previous 21 days from the iNaturalist API.
+- Normalize API results into the common application schema.
+- Apply the required two-mile point-to-trail filter locally.
+
+If the API request fails:
+
+- show `Recent observations unavailable`
+- continue displaying the selected trail and historical observations
+- do not crash
+
+If the API succeeds but no recent observations qualify:
+
+- show `No recent observations found`
+- treat this as a normal result, not an error
+
+### Historical observations
+
+- Load the committed historical Parquet.
+- Apply the same authoritative two-mile point-to-trail filter used for recent observations.
+
+### Observation map
+
+The selected-trail map must:
+
+- show the complete trail geometry
+- show only qualifying observations
+- visually distinguish recent and historical observations
+- remain usable when either period has no observations
 
 ### Species summaries
 
-For both recent and historical observations:
+Calculate recent and historical summaries separately.
 
-- Group observations by taxon group.
-- Rank species by observation count.
-- Display no more than five species per taxon group.
-- Use the most recent observation date as the secondary sort key when counts are equal.
+For each period:
 
-Each displayed species must include:
+- group by supported taxon group
+- rank species by observation count
+- break count ties using most recent observation date
+- show up to 10 species per taxon group
+- include display/common name, count, most recent date, and thumbnail when available
 
-- Common or display name
-- Observation count
-- Most recent observation date
-- Thumbnail image, when available
+Missing optional names or thumbnails must not crash the app.
 
-Missing observations, names, taxon values, dates, or thumbnails must not cause the application to fail.
+## 10. Favorites
 
-Recent and historical summaries must remain visually distinct.
+Favorites are required for the MVP.
 
-## 9. Testing Requirements
+- Add/remove favorite from Tab 3.
+- Store favorites in `st.session_state`.
+- Display favorites in the sidebar.
+- Allow CSV download from the sidebar.
+- Favorites last for the current Streamlit session.
 
-Use a small `pytest` suite focused on critical transformation, API-validation, and geospatial logic.
-
-Tests must use small, deterministic local fixtures and must not depend on live external APIs.
-
-The MVP should target approximately **8 tests total**. Add a test only when it protects an important business rule, spatial calculation, validation behavior, or unfamiliar implementation technique.
-
-### `test_trails.py`
-
-Target approximately four tests covering the most important trail-processing behavior:
-
-- Placeholder-value cleanup
-- Trail-name normalization and known aliases
-- Width aggregation, including one value, `Varies`, and `Unknown`
-- Grouping behavior, including unique group keys and preservation of segment counts
-
-### `test_dnr.py`
-
-Target approximately two tests covering DNR-specific logic:
-
-- Batch generation or raw-download validation
-- One representative mocked API behavior or validation failure
-
-Do not create a large matrix of HTTP error tests for the MVP.
-
-### `test_spatial.py`
-
-Target approximately two tests covering core geospatial behavior:
-
-- Projected trail-length calculation using `EPSG:3078`
-- True point-to-geometry distance calculation
-
-Additional ZIP-code or iNaturalist tests may be added later only if a specific behavior proves important enough to justify them. Keep the complete MVP suite intentionally small.
-
-Organize tests as:
+CSV fields:
 
 ```text
-tests/
-├── test_trails.py
-├── test_dnr.py
-└── test_spatial.py
+Trail
+County
+Length
+Surface
+Width
 ```
 
-A shared `conftest.py` is optional and should be added only if fixtures are duplicated across test files.
+## 11. Testing
 
-The complete test suite must run with:
+Use a concise `pytest` suite targeting approximately **8 tests total**. Exact distribution is flexible.
 
-```bash
-pytest
-```
+Use small deterministic fixtures. Do not rely on live external APIs.
 
-## 10. Non-Goals
+High-value behaviors include:
 
-The MVP does not include:
+- placeholder cleanup
+- trail grouping and aggregation
+- representative API validation/mocking
+- ZIP-to-trail point distance in `EPSG:3078`
+- search-radius filtering
+- nearest-first ordering
+- maximum-20 result behavior
+- two-mile observation filtering
 
-- Browser-based GPS geolocation
-- Automated historical iNaturalist updates
-- Weather integration
-- Driving-distance calculations
-- Route navigation
-- Turn-by-turn directions
-- User authentication
-- Saved favorites, reviews, or ratings
-- Production database storage
-- Machine-learning recommendations
-- Automated trail difficulty or safety ratings
-- Real-time wildlife guarantees
-- Hosted production infrastructure
-- A mobile application
+Avoid large matrices of low-value HTTP or UI tests for the MVP.
+
+## 12. Guardrails
+
+Do not add these to the MVP:
+
+- browser/device geolocation
+- driving-distance or routing features
+- weather integration
+- machine-learning recommendations
+- hosted/production infrastructure
+
+Keep the implementation local, understandable, reproducible, and small enough to explain clearly in an interview.
