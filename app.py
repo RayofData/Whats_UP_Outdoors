@@ -3,6 +3,9 @@ import os
 
 import streamlit as st
 import geopandas as gpd 
+from streamlit_folium import st_folium
+
+from src.maps import build_trail_map
 
 st.set_page_config(page_title="What's UP Outdoors")
 
@@ -24,7 +27,13 @@ st.subheader("What's UP Outdoors: Upper Peninsula Trail Explorer")
 
 st.divider()
 
-st.dataframe(trails.head(10))
+st.dataframe(trails)
+
+st.divider()
+
+trail_map = build_trail_map(trails)
+
+st_folium(trail_map, height=300)
 
 st.divider()
 

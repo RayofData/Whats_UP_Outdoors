@@ -34,6 +34,7 @@ Reusable code is organized under `src/`:
 src/
 ├── dnr.py
 ├── trails.py
+├── maps.py
 ├── locations.py
 ├── inaturalist.py
 └── geospatial.py
@@ -59,6 +60,7 @@ whats-up-outdoors/
 │   │   ├── dnr_api.py
 │   ├── __init__.py
 │   ├── trails.py
+│   ├── maps.py
 │   ├── locations.py
 │   ├── inaturalist.py
 │   └── geospatial.py
