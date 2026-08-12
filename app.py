@@ -33,36 +33,54 @@ zipcode = st.sidebar.text_input("Enter UP Zipcode: ")
 st.image(BANNER_PATH)
 st.subheader("What's UP Outdoors: Upper Peninsula Trail Explorer")
 
-st.divider()
-st.dataframe(
-    trails,
-    column_order=[
-        "HikingName",
-        "County",
-        "LengthCategory",
-        "ReportedLengthMiles",
-        "TrailWidth",
-        "SurfaceTypes",
-        "TrailStatuses",
-    ],
-    column_config={
-        "HikingName": "Trail",
-        "LengthCategory": "Length Category",
-        "ReportedLengthMiles": "Length (Miles)",
-        "TrailWidth": "Width",
-        "SurfaceTypes": "Surface",
-        "TrailStatuses": "Status",
-    },
-    hide_index=True,
-)
+tab1, tab2, tab3 = st.tabs([
+    "Discover Trails",
+    "Trail Map",
+    "Trail Details",
+])
 
 st.divider()
-trail_map = build_trail_map(trails)
-st_folium(trail_map, height=300)
 
-st.divider()
-st.subheader("Metrics")
-st.metric(label="Total Trails", value=len(trails))
+with tab1:
+
+    st.dataframe(
+        trails,
+        column_order=[
+            "HikingName",
+            "County",
+            "LengthCategory",
+            "ReportedLengthMiles",
+            "TrailWidth",
+            "SurfaceTypes",
+            "TrailStatuses",
+        ],
+        column_config={
+            "HikingName": "Trail",
+            "LengthCategory": "Length Category",
+            "ReportedLengthMiles": "Length (Miles)",
+            "TrailWidth": "Width",
+            "SurfaceTypes": "Surface",
+            "TrailStatuses": "Status",
+        },
+        hide_index=True,
+    )
+
+    st.divider()
+    st.subheader("Metrics")
+    st.metric(label="Total Trails", value=len(trails))
+
+with tab2: 
+    trail_map = build_trail_map(trails)
+    st_folium(trail_map, height=300)
+
+    st.divider()
+    st.subheader("Metrics")
+    st.metric(label="Total Trails", value=len(trails))
+
+with tab3:
+    st.write("Select trail tab")
+
+
 
 if zipcode:
     st.write(f"You have entered zipcode: {zipcode}")
