@@ -4,7 +4,7 @@ import geopandas as gpd
 
 
 def build_trail_map(trails):
-    """Build an interative map of Upper Peninsula trails."""
+    """Build an interactive map of Upper Peninsula trails."""
     map_trails = trails.to_crs(epsg=4326).copy()
 
     map_trails["Miles"] = map_trails["ReportedLengthMiles"].round(2)
