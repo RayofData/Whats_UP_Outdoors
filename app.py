@@ -34,7 +34,27 @@ st.image(BANNER_PATH)
 st.subheader("What's UP Outdoors: Upper Peninsula Trail Explorer")
 
 st.divider()
-st.dataframe(trails)
+st.dataframe(
+    trails,
+    column_order=[
+        "HikingName",
+        "County",
+        "LengthCategory",
+        "ReportedLengthMiles",
+        "TrailWidth",
+        "SurfaceTypes",
+        "TrailStatuses",
+    ],
+    column_config={
+        "HikingName": "Trail",
+        "LengthCategory": "Length Category",
+        "ReportedLengthMiles": "Length (Miles)",
+        "TrailWidth": "Width",
+        "SurfaceTypes": "Surface",
+        "TrailStatuses": "Status",
+    },
+    hide_index=True,
+)
 
 st.divider()
 trail_map = build_trail_map(trails)
