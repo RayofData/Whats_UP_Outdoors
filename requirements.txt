@@ -7,3 +7,4 @@ requests
 shapely
 streamlit
 streamlit-folium
+pytest
