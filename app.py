@@ -65,9 +65,10 @@ st.sidebar.image(MAP_IMAGE_PATH)
 def reset_search():
     """Resets zip to reset table"""
     st.session_state.zipcode = ""
+    st.session_state.selected_rows = None
 
 zipcode = st.sidebar.text_input("Enter UP Zipcode: ", key="zipcode")
-radius = st.sidebar.radio("Search Radius: ", VALID_SEARCH_RADII, horizontal = True)
+radius = st.sidebar.radio("Search Radius (Miles): ", VALID_SEARCH_RADII, horizontal = True)
 st.sidebar.button("Reset to all trails.", on_click=reset_search)
 
 if zipcode: 
@@ -155,14 +156,14 @@ tab1, tab2, tab3 = st.tabs([
 st.divider()
 
 with tab1:
-    selected_rows = None
+    st.session_state.selected_rows = None
     if search_completed and nearby_trails.empty:
         st.info(f"No trails found within {radius} miles.")
 
     else: 
         event = display_trails_dataframe(nearby_trails, selectable=True)
 
-        selected_rows = event.selection.rows
+        st.session_state.selected_rows = event.selection.rows
 
         st.divider()
         st.subheader("Metrics")
@@ -177,8 +178,8 @@ with tab2:
     st.metric(label="Total Trails", value=len(nearby_trails))
 
 with tab3:
-    if selected_rows:
-        row_idx = selected_rows[0]
+    if st.session_state.selected_rows:
+        row_idx = st.session_state.selected_rows[0]
         selected_data = nearby_trails.iloc[[row_idx]]
 
         st.session_state.selected_trail = (
