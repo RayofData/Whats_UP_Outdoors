@@ -7,8 +7,15 @@ import geopandas as gpd
 from streamlit_folium import st_folium
 
 from src.maps import build_trail_map
-from src.locations import normalize_zipcode, zip_to_point
-from src.spatial import find_nearby_trails, distance_to_trails, VALID_SEARCH_RADII
+from src.locations import (
+    normalize_zipcode, 
+    zip_to_point
+)
+from src.spatial import (
+    find_nearby_trails, 
+    distance_to_trails, 
+    VALID_SEARCH_RADII
+)
 
 st.set_page_config(page_title="What's UP Outdoors")
 
@@ -24,14 +31,25 @@ BANNER_PATH = STATIC_DIR / "banner.png"
 
 trails = gpd.read_parquet(PROCESSED_PATH)
 
+st.set_page_config(initial_sidebar_state = "expanded", layout="wide")
 st.sidebar.title("What's UP Outdoors")
-st.sidebar.write("A Python and Streamlit portfolio project for discovering hiking "
-                    "trails and nearby iNaturalist observations in Michigan’s Upper Peninsula. "
-                    "Enter any UP zipcode, use map if needed.")
+st.sidebar.write(
+    "Discover hiking trails across Michigan’s Upper Peninsula and explore nearby "
+    "iNaturalist observations."
+)
 
+st.sidebar.caption(
+    "Enter a ZIP code and choose a search radius to find nearby trails."
+)
 st.sidebar.image(MAP_IMAGE_PATH)
-zipcode = st.sidebar.text_input("Enter UP Zipcode: ")
+
+def reset_search():
+    st.session_state.zipcode = ""
+
+zipcode = st.sidebar.text_input("Enter UP Zipcode: ", key="zipcode")
 radius = st.sidebar.radio("Search Radius: ", VALID_SEARCH_RADII, horizontal = True)
+st.sidebar.button("Reset to all trails.", on_click=reset_search)
+
 nearby_trails = trails.copy()
 
 if zipcode:
