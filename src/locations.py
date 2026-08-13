@@ -6,18 +6,19 @@ import pandas as pd
 import pgeocode
 from shapely.geometry import Point
 
-MICHIGAN_GEOREF = "EPSG:3078"
+
+
 ZIP_LOOKUP = pgeocode.Nominatim("us")
 ZIP_PATTERN = re.compile(r"^\d{5}$")
 
 def normalize_zipcode(zipcode):
     """Normalize and validate a five-digit U.S. ZIP code."""
-    normalize_zipcode = str(zipcode).strip()
+    normalized_zipcode = str(zipcode).strip()
 
-    if not ZIP_PATTERN.fullmatch(normalize_zipcode):
-        raise ValueError("ZIP code must contail exactly 5 digits.")
+    if not ZIP_PATTERN.fullmatch(normalized_zipcode):
+        raise ValueError("ZIP code must contain exactly 5 digits.")
 
-    return normalize_zipcode
+    return normalized_zipcode
 
 
 
@@ -32,7 +33,3 @@ def zip_to_point(zipcode):
         raise ValueError("ZIP code could not be resolved.")
 
     return Point(location.longitude, location.latitude)
-
-
-
-

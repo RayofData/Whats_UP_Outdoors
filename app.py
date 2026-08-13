@@ -6,7 +6,6 @@ import streamlit as st
 import geopandas as gpd 
 from streamlit_folium import st_folium
 
-from src.maps import build_trail_map
 from src.locations import (
     normalize_zipcode, 
     zip_to_point
@@ -16,8 +15,7 @@ from src.spatial import (
     distance_to_trails, 
     VALID_SEARCH_RADII
 )
-from src.trails import display_trails_dataframe
-
+from src.maps import build_trail_map
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
@@ -51,18 +49,68 @@ radius = st.sidebar.radio("Search Radius: ", VALID_SEARCH_RADII, horizontal = Tr
 st.sidebar.button("Reset to all trails.", on_click=reset_search)
 
 nearby_trails = trails.copy()
+search_completed = False
+
 
 if zipcode:
-    normal_zip = normalize_zipcode(zipcode)
-    zip_point = zip_to_point(normal_zip)
+    try: 
+        normal_zip = normalize_zipcode(zipcode)
+        zip_point = zip_to_point(normal_zip)
     
-    nearby_trails = find_nearby_trails(
-        nearby_trails, 
-        zip_point, 
-        radius
-    )
+        nearby_trails = find_nearby_trails(
+            nearby_trails, 
+            zip_point, 
+            radius
+        )
 
-    nearby_trails["DistanceToTrailMiles"] = distance_to_trails(nearby_trails, zip_point)
+        nearby_trails["DistanceToTrailMiles"] = distance_to_trails(nearby_trails, zip_point)
+        search_completed = True
+        
+    except ValueError as exc:
+        st.sidebar.error(str(exc))
+
+
+
+
+
+
+def display_trails_dataframe(trails, selectable=False):
+    """Display trail data with readable Streamlit column formatting."""
+    dataframe_options = {
+        "column_order": [
+            "HikingName",
+            "County",
+            "DistanceToTrailMiles",
+            "LengthCategory",
+            "ReportedLengthMiles",
+            "TrailWidth",
+            "SurfaceTypes",
+            "TrailStatuses",
+        ],
+        "column_config": {
+            "HikingName": "Trail",
+            "County": "County",
+            "DistanceToTrailMiles": "Distance to Trail (Miles)",
+            "LengthCategory": "Length Category",
+            "ReportedLengthMiles": "Length (Miles)",
+            "TrailWidth": "Width",
+            "SurfaceTypes": "Surface",
+            "TrailStatuses": "Status",
+        },
+        "hide_index": True,
+    }
+
+    if selectable:
+        dataframe_options.update({
+            "on_select": "rerun",
+            "selection_mode": "single-row",
+            "key": "selection",
+        })
+
+    return st.dataframe(
+        trails,
+        **dataframe_options,
+    )
 
 
 st.image(BANNER_PATH)
@@ -77,14 +125,18 @@ tab1, tab2, tab3 = st.tabs([
 st.divider()
 
 with tab1:
+    selected_rows = None
+    if search_completed and nearby_trails.empty:
+        st.info(f"No trails found within {radius} miles.")
 
-    event = display_trails_dataframe(nearby_trails, selectable=True)
+    else: 
+        event = display_trails_dataframe(nearby_trails, selectable=True)
 
-    selected_rows = event.selection.rows
+        selected_rows = event.selection.rows
 
-    st.divider()
-    st.subheader("Metrics")
-    st.metric(label="Total Trails", value=len(nearby_trails))
+        st.divider()
+        st.subheader("Metrics")
+        st.metric(label="Total Trails", value=len(nearby_trails))
 
 with tab2: 
     trail_map = build_trail_map(nearby_trails)

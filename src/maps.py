@@ -2,7 +2,7 @@
 
 import geopandas as gpd
 
-UP_CENTER= [46.5, -87.5]
+UP_CENTER = [46.5, -87.5]
 
 
 def build_trail_map(trails):
