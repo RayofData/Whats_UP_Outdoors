@@ -47,6 +47,27 @@ trails = load_trails()
 # ==================================================
 # Sidebar 
 # ==================================================
+if "selected_rows" not in st.session_state:
+    st.session_state.selected_rows = []
+
+if "selected_trail" not in st.session_state:
+    st.session_state.selected_trail = None
+
+if "search_version" not in st.session_state:
+    st.session_state.search_version = 0
+
+
+def reset_selection():
+    """Clear the selected trail when search criteria change."""
+    st.session_state.selected_rows = []
+    st.session_state.selected_trail = None
+    st.session_state.search_version += 1
+
+
+def reset_search():
+    """Resets zip to reset table"""
+    st.session_state.zipcode = ""
+
 st.sidebar.title(TITLE)
 st.sidebar.write(
     "Discover hiking trails across Michigan’s Upper Peninsula and explore nearby "
@@ -62,32 +83,37 @@ st.sidebar.image(MAP_IMAGE_PATH)
 # ==================================================
 # ZIP Code Search
 # ==================================================
-def reset_search():
-    """Resets zip to reset table"""
-    st.session_state.zipcode = ""
-    st.session_state.selected_rows = None
+zipcode = st.sidebar.text_input(
+    "Enter UP Zipcode: ",
+    key="zipcode",
+    on_change=reset_selection
+)
 
-zipcode = st.sidebar.text_input("Enter UP Zipcode: ", key="zipcode")
-radius = st.sidebar.radio("Search Radius (Miles): ", VALID_SEARCH_RADII, horizontal = True)
+radius = st.sidebar.radio(
+    "Search Radius (Miles): ", 
+    VALID_SEARCH_RADII, 
+    horizontal = True,
+    on_change=reset_selection
+)
+
 st.sidebar.button("Reset to all trails.", on_click=reset_search)
-
-if zipcode: 
-    zip_info = get_zip_info(zipcode)
-    st.sidebar.markdown(
-        f"""
-    **ZIP:** {zip_info["zipcode"]}  
-    **City:** {zip_info["place"]}  
-    **County:** {zip_info["county"]}  
-    **State:** {zip_info["state"]}
-    """
-    )     
 
 
 nearby_trails = trails.copy()
 search_completed = False
 
-if zipcode:
-    try: 
+if zipcode: 
+    try:
+        zip_info = get_zip_info(zipcode)
+        st.sidebar.markdown(
+            f"""
+        **ZIP:** {zip_info["zipcode"]}  
+        **City:** {zip_info["place"]}  
+        **County:** {zip_info["county"]}  
+        **State:** {zip_info["state"]}
+        """
+        )     
+
         normal_zip = normalize_zipcode(zipcode)
         zip_point = zip_to_point(normal_zip)
     
@@ -133,7 +159,7 @@ def display_trails_dataframe(trails, selectable=False):
         dataframe_options.update({
             "on_select": "rerun",
             "selection_mode": "single-row",
-            "key": "selection",
+            "key": f"selection_{st.session_state.search_version}",
         })
 
     return st.dataframe(
@@ -182,10 +208,7 @@ with tab3:
         row_idx = st.session_state.selected_rows[0]
         selected_data = nearby_trails.iloc[[row_idx]]
 
-        st.session_state.selected_trail = (
-            selected_data["HikingName"],
-            selected_data["County"]
-        )
+        st.subheader(f"Trail: {selected_data["HikingName"].iloc[0]} in {selected_data["County"].iloc[0]} County")
 
         display_trails_dataframe(selected_data, selectable=False)
 
@@ -193,4 +216,3 @@ with tab3:
         st.info("Click on a trail in tab 1 to see details.")
 
 
-st.divider()
