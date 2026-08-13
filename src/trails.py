@@ -1,6 +1,7 @@
 """Clean, normalize, group, and summarize trail data."""
 
-import pandas as pd 
+import pandas as pd
+import streamlit as st
 
 DROP_COLUMNS = [
     "Peninsula",
@@ -238,3 +239,42 @@ def add_length_category(trails):
     )
 
     return categorized
+
+
+def display_trails_dataframe(trails, selectable=False):
+    """Display trail data with readable Streamlit column formatting."""
+    dataframe_options = {
+        "column_order": [
+            "HikingName",
+            "County",
+            "DistanceToTrailMiles",
+            "LengthCategory",
+            "ReportedLengthMiles",
+            "TrailWidth",
+            "SurfaceTypes",
+            "TrailStatuses",
+        ],
+        "column_config": {
+            "HikingName": "Trail",
+            "County": "County",
+            "DistanceToTrailMiles": "Distance to Trail (Miles)",
+            "LengthCategory": "Length Category",
+            "ReportedLengthMiles": "Length (Miles)",
+            "TrailWidth": "Width",
+            "SurfaceTypes": "Surface",
+            "TrailStatuses": "Status",
+        },
+        "hide_index": True,
+    }
+
+    if selectable:
+        dataframe_options.update({
+            "on_select": "rerun",
+            "selection_mode": "single-row",
+            "key": "selection",
+        })
+
+    return st.dataframe(
+        trails,
+        **dataframe_options,
+    )

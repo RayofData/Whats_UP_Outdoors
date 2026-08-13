@@ -16,8 +16,7 @@ from src.spatial import (
     distance_to_trails, 
     VALID_SEARCH_RADII
 )
-
-st.set_page_config(page_title="What's UP Outdoors")
+from src.trails import display_trails_dataframe
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -31,7 +30,7 @@ BANNER_PATH = STATIC_DIR / "banner.png"
 
 trails = gpd.read_parquet(PROCESSED_PATH)
 
-st.set_page_config(initial_sidebar_state = "expanded", layout="wide")
+st.set_page_config(page_title = "What's UP Outdoors.", initial_sidebar_state = "expanded", layout="wide")
 st.sidebar.title("What's UP Outdoors")
 st.sidebar.write(
     "Discover hiking trails across Michigan’s Upper Peninsula and explore nearby "
@@ -45,6 +44,7 @@ st.sidebar.image(MAP_IMAGE_PATH)
 
 def reset_search():
     st.session_state.zipcode = ""
+
 
 zipcode = st.sidebar.text_input("Enter UP Zipcode: ", key="zipcode")
 radius = st.sidebar.radio("Search Radius: ", VALID_SEARCH_RADII, horizontal = True)
@@ -78,31 +78,9 @@ st.divider()
 
 with tab1:
 
-    st.dataframe(
-        nearby_trails,
-        column_order=[
-            "HikingName",
-            "County",
-            "DistanceToTrailMiles",
-            "LengthCategory",
-            "ReportedLengthMiles",
-            "TrailWidth",
-            "SurfaceTypes",
-            "TrailStatuses",
+    event = display_trails_dataframe(nearby_trails, selectable=True)
 
-        ],
-        column_config={
-            "HikingName": "Trail",
-            "LengthCategory": "Length Category",
-            "DistanceToTrailMiles": "Distance to Trail (Miles)",
-            "ReportedLengthMiles": "Length (Miles)",
-            "TrailWidth": "Width",
-            "SurfaceTypes": "Surface",
-            "TrailStatuses": "Status",
-
-        },
-        hide_index=True,
-    )
+    selected_rows = event.selection.rows
 
     st.divider()
     st.subheader("Metrics")
@@ -117,7 +95,14 @@ with tab2:
     st.metric(label="Total Trails", value=len(nearby_trails))
 
 with tab3:
-    st.write("Select trail tab")
+    if selected_rows:
+        row_idx = selected_rows[0]
+        selected_data = nearby_trails.iloc[[row_idx]]
+
+        display_trails_dataframe(selected_data, selectable=False)
+
+    else:
+        st.info("Click on a trail in tab 1 to see details.")
 
 
 
