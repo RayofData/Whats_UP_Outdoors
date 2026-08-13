@@ -7,6 +7,8 @@ import geopandas as gpd
 from streamlit_folium import st_folium
 
 from src.maps import build_trail_map
+from src.locations import normalize_zipcode, zip_to_point
+from src.spatial import find_nearby_trails, distance_to_trails
 
 st.set_page_config(page_title="What's UP Outdoors")
 
@@ -29,6 +31,20 @@ st.sidebar.write("A Python and Streamlit portfolio project for discovering hikin
 
 st.sidebar.image(MAP_IMAGE_PATH)
 zipcode = st.sidebar.text_input("Enter UP Zipcode: ")
+nearby_trails = trails.copy()
+
+if zipcode:
+    normal_zip = normalize_zipcode(zipcode)
+    zip_point = zip_to_point(normal_zip)
+    
+    nearby_trails = find_nearby_trails(
+        nearby_trails, 
+        zip_point, 
+        50
+    )
+
+    nearby_trails["DistanceToTrailMiles"] = distance_to_trails(nearby_trails, zip_point)
+
 
 st.image(BANNER_PATH)
 st.subheader("What's UP Outdoors: Upper Peninsula Trail Explorer")
@@ -44,38 +60,42 @@ st.divider()
 with tab1:
 
     st.dataframe(
-        trails,
+        nearby_trails,
         column_order=[
             "HikingName",
             "County",
+            "DistanceToTrailMiles",
             "LengthCategory",
             "ReportedLengthMiles",
             "TrailWidth",
             "SurfaceTypes",
             "TrailStatuses",
+
         ],
         column_config={
             "HikingName": "Trail",
             "LengthCategory": "Length Category",
+            "DistanceToTrailMiles": "Distance to Trail (Miles)",
             "ReportedLengthMiles": "Length (Miles)",
             "TrailWidth": "Width",
             "SurfaceTypes": "Surface",
             "TrailStatuses": "Status",
+
         },
         hide_index=True,
     )
 
     st.divider()
     st.subheader("Metrics")
-    st.metric(label="Total Trails", value=len(trails))
+    st.metric(label="Total Trails", value=len(nearby_trails))
 
 with tab2: 
-    trail_map = build_trail_map(trails)
+    trail_map = build_trail_map(nearby_trails)
     st_folium(trail_map, height=300)
 
     st.divider()
     st.subheader("Metrics")
-    st.metric(label="Total Trails", value=len(trails))
+    st.metric(label="Total Trails", value=len(nearby_trails))
 
 with tab3:
     st.write("Select trail tab")

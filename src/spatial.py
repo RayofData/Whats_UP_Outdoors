@@ -3,7 +3,7 @@ nearest-trail filtering, and related spatial operations."""
 
 import geopandas as gpd
 
-from locations import MICHIGAN_GEOREF
+from src.locations import MICHIGAN_GEOREF
 
 
 METERS_PER_MILE = 1609.344
