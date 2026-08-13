@@ -7,7 +7,7 @@ from src.locations import MICHIGAN_GEOREF
 
 
 METERS_PER_MILE = 1609.344
-VALID_SEARCH_RADII = {10, 25, 50}
+VALID_SEARCH_RADII = [10, 25, 50]
 MAX_TRAIL_RESULTS = 20
 
 
@@ -34,7 +34,7 @@ def find_nearby_trails(trails, user_point, radius_miles):
     if trails.crs is None:
         raise ValueError("Trail GeoDataFrame must have a defined CRS.")
 
-    if radius_miles not in VALID_SEARCH_RADII:
+    if radius_miles not in set(VALID_SEARCH_RADII):
         raise ValueError("Invalid search radius.")
 
     results = trails.copy()

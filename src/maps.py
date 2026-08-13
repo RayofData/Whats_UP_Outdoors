@@ -2,6 +2,8 @@
 
 import geopandas as gpd
 
+UP_CENTER= [46.5, -87.5]
+
 
 def build_trail_map(trails):
     """Build an interactive map of Upper Peninsula trails."""
@@ -10,6 +12,8 @@ def build_trail_map(trails):
     map_trails["Miles"] = map_trails["ReportedLengthMiles"].round(2)
 
     return map_trails.explore(
+        location = UP_CENTER,
+        zoom_start=6,
         tooltip=[
             "HikingName", 
             "County",

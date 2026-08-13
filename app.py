@@ -8,7 +8,7 @@ from streamlit_folium import st_folium
 
 from src.maps import build_trail_map
 from src.locations import normalize_zipcode, zip_to_point
-from src.spatial import find_nearby_trails, distance_to_trails
+from src.spatial import find_nearby_trails, distance_to_trails, VALID_SEARCH_RADII
 
 st.set_page_config(page_title="What's UP Outdoors")
 
@@ -31,6 +31,7 @@ st.sidebar.write("A Python and Streamlit portfolio project for discovering hikin
 
 st.sidebar.image(MAP_IMAGE_PATH)
 zipcode = st.sidebar.text_input("Enter UP Zipcode: ")
+radius = st.sidebar.radio("Search Radius: ", VALID_SEARCH_RADII, horizontal = True)
 nearby_trails = trails.copy()
 
 if zipcode:
@@ -40,7 +41,7 @@ if zipcode:
     nearby_trails = find_nearby_trails(
         nearby_trails, 
         zip_point, 
-        50
+        radius
     )
 
     nearby_trails["DistanceToTrailMiles"] = distance_to_trails(nearby_trails, zip_point)
