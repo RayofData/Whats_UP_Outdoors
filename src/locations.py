@@ -28,19 +28,19 @@ def zip_to_point(zipcode):
     location = ZIP_LOOKUP.query_postal_code(normalized_zipcode)
 
     if pd.isna(location.latitude) or pd.isna(location.longitude):
-        raise ValueError("ZIP code could not be resolved.")
+        raise ValueError("Not a Valid U.S. ZIP code.")
 
     return Point(location.longitude, location.latitude)
 
 
 def get_zip_info(zipcode):
-    """Return basic location infoation for a U.S. Zip code."""
+    """Return basic location information for a U.S. Zip code."""
     normalized_zipcode = normalize_zipcode(zipcode)
 
     location = ZIP_LOOKUP.query_postal_code(normalized_zipcode)
 
     if pd.isna(location.latitude) or pd.isna(location.longitude):
-        raise ValueError("ZIP code could not be resolved.")
+        raise ValueError("Not a Valid U.S. ZIP code.")
     
     return {
         "zipcode": normalized_zipcode,
