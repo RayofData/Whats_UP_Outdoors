@@ -4,11 +4,11 @@ from shapely.geometry import LineString, Point
 
 from src.spatial import distance_to_trails, find_nearby_trails
 
-one_mile_meters = 1609.344
+ONE_MILE_METERS = 1609.344
 
 
 def make_trail(projected_point, distance_miles):
-    distance_meters = distance_miles * one_mile_meters
+    distance_meters = distance_miles * ONE_MILE_METERS
     
     return LineString(
         [
@@ -18,10 +18,12 @@ def make_trail(projected_point, distance_miles):
             ),
             (
                 projected_point.x + distance_meters,
-                projected_point.y + 1000
+                projected_point.y + 1500
             )
         ]
     )
+
+
 
 def test_distance_to_trails_returns_one_mile():
     """Point-to-trail distance should be approximately one mile."""
@@ -53,6 +55,8 @@ def test_distance_to_trails_returns_one_mile():
     result = distances.iloc[0]
 
     assert result == pytest.approx(1.0)
+
+
 
 def test_find_nearby_trails_filters_and_sorts():
     """Trails should be filtered by radius and ordered nearest first."""
@@ -100,7 +104,7 @@ def test_find_nearby_trails_filters_and_sorts():
     )
 
 
-def test_find_nearby_trails_limits_results():
+def test_find_nearby_trails_limits_results_to_20():
     """Trails should be limited to only 20 results."""
     user_point = Point(-84.7, 46.0)
     projected_point = (
@@ -121,7 +125,7 @@ def test_find_nearby_trails_limits_results():
         },
         geometry=[
             make_trail(projected_point, distance)
-            for distance in range(5,35)
+            for distance in range(5, 35)
         ],
         crs="EPSG:3078"
     )
@@ -134,3 +138,38 @@ def test_find_nearby_trails_limits_results():
 
     assert len(results) == 20
     
+
+def test_find_nearby_trails_returns_empty_when_none_within_radius():
+    """A valid search should return an empty when no trails are within the radius."""
+    user_point = Point(-84.7, 46.0)
+
+    projected_point = (
+        gpd.GeoSeries(
+            [user_point],
+            crs="EPSG:4326",
+        )
+        .to_crs("EPSG:3078")
+        .iloc[0]
+    )
+
+    trails = gpd.GeoDataFrame(
+        {
+            "HikingName": [
+                f"{distance} Mile Trail"
+                for distance in range(100, 150, 10)
+            ]
+        },
+        geometry=[
+            make_trail(projected_point, distance)
+            for distance in range(100, 150, 10)
+        ],
+        crs="EPSG:3078"
+    )
+
+    results = find_nearby_trails(
+        trails,
+        user_point,
+        radius_miles=50
+    )
+
+    assert results.empty
