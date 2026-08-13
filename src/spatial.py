@@ -9,11 +9,11 @@ METERS_PER_MILE = 1609.344
 MAX_TRAIL_RESULTS = 20
 
 
-def project_point(point, source_crs="EPSG:4326", target_crs=MICHIGAN_GEOREF):
+def project_point(point):
     """Reproject a Shapely point between coordinate reference systems."""
-    point_series = gpd.GeoSeries([point], crs=source_crs)
+    point_series = gpd.GeoSeries([point], crs="EPSG:4326")
 
-    return point_series.to_crs(target_crs).iloc[0]
+    return point_series.to_crs(MICHIGAN_GEOREF).iloc[0]
 
 
 def distance_to_trails(trails, point):

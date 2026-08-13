@@ -36,12 +36,14 @@ VALID_SEARCH_RADII = [10, 25, 50]
 # ==================================================
 trails = gpd.read_parquet(PROCESSED_PATH)
 
-st.set_page_config(page_title = "What's UP Outdoors.", initial_sidebar_state = "expanded", layout="wide")
+TITLE = "What's UP Outdoors."
+
+st.set_page_config(page_title = TITLE, initial_sidebar_state = "expanded", layout="wide")
 
 # ==================================================
 # Sidebar 
 # ==================================================
-st.sidebar.title("What's UP Outdoors")
+st.sidebar.title(TITLE)
 st.sidebar.write(
     "Discover hiking trails across Michigan’s Upper Peninsula and explore nearby "
     "iNaturalist observations."
@@ -138,7 +140,7 @@ def display_trails_dataframe(trails, selectable=False):
 # Main Page with Tabs
 # ==================================================
 st.image(BANNER_PATH)
-st.subheader("What's UP Outdoors: Upper Peninsula Trail Explorer")
+st.subheader(f"{TITLE}: Upper Peninsula Trail Explorer")
 
 tab1, tab2, tab3 = st.tabs([
     "Discover Trails",
