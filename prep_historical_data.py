@@ -30,7 +30,6 @@ COLUMNS = [
         "image_url",
         "latitude",
         "longitude",
-        "coordinates_obscured",
         "common_name",
         "iconic_taxon_name",
         "taxon_species_name",
