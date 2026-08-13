@@ -13,8 +13,7 @@ from src.locations import (
 )
 from src.spatial import (
     find_nearby_trails, 
-    distance_to_trails, 
-    VALID_SEARCH_RADII
+    distance_to_trails
 )
 from src.maps import build_trail_map
 
@@ -29,6 +28,8 @@ PROCESSED_PATH = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
 STATIC_DIR = PROJECT_ROOT / "static"
 MAP_IMAGE_PATH = STATIC_DIR / "map_up.jpg"
 BANNER_PATH = STATIC_DIR / "banner.png"
+
+VALID_SEARCH_RADII = [10, 25, 50]
 
 # ==================================================
 # Load Trails
