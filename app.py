@@ -114,8 +114,7 @@ if zipcode:
         """
         )     
 
-        normal_zip = normalize_zipcode(zipcode)
-        zip_point = zip_to_point(normal_zip)
+        zip_point = zip_to_point(zipcode)
     
         nearby_trails = find_nearby_trails(
             nearby_trails, 
