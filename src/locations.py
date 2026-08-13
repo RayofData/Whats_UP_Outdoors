@@ -1,51 +1,38 @@
-"""Handles logic for distance calculations"""
+"""ZIP normalization, validation, `pgeocode` lookup, and user point creation."""
 
-from pathlib import Path
+import re
 
-import geopandas as gpd 
+import pandas as pd
 import pgeocode
 from shapely.geometry import Point
 
-
-PROCESSED_DIR = Path("data/processed")
-PROCESSED_PATH = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
-
 MICHIGAN_GEOREF = "EPSG:3078"
-METERS_PER_MILE = 1609.344
+ZIP_LOOKUP = pgeocode.Nominatim("us")
+ZIP_PATTERN = re.compile(r"^\d{5}$")
 
-trails = gpd.read_parquet(PROCESSED_PATH)
-trails_projected = trails.to_crs(MICHIGAN_GEOREF)
+def normalize_zipcode(zipcode):
+    """Normalize and validate a five-digit U.S. ZIP code."""
+    normalize_zipcode = str(zipcode).strip()
+
+    if not ZIP_PATTERN.fullmatch(normalize_zipcode):
+        raise ValueError("ZIP code must contail exactly 5 digits.")
+
+    return normalize_zipcode
 
 
 
-user_zipcode = "49781" #St. Ignace
+def zip_to_point(zipcode):
+    """Converts ZIP code to longitude and latitude point."""
 
-zip_lookup = pgeocode.Nominatim("us")
+    normalized_zipcode = normalize_zipcode(zipcode)
 
-location = zip_lookup.query_postal_code(user_zipcode)
+    location = ZIP_LOOKUP.query_postal_code(normalized_zipcode)
 
-user_point = Point(
-    location.longitude,
-    location.latitude
-)
+    if pd.isna(location.latitude) or pd.isna(location.longitude):
+        raise ValueError("ZIP code could not be resolved.")
 
-user_location = gpd.GeoDataFrame(
-    {"zipcode": [user_zipcode]},
-    geometry=[user_point],
-    crs="EPSG:4326"
-)
-user_location_projected = user_location.to_crs(MICHIGAN_GEOREF)
+    return Point(location.longitude, location.latitude)
 
-user_point_projected = user_location_projected.geometry.iloc[0]
 
-trails_projected["DistanceMiles"] = (
-    trails_projected.geometry.distance(user_point_projected)
-    / METERS_PER_MILE
-)
 
-print(
-    trails_projected
-    .sort_values("DistanceMiles")
-    .head(5)
-)
 
