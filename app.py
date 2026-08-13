@@ -18,6 +18,9 @@ from src.spatial import (
 )
 from src.maps import build_trail_map
 
+# ==================================================
+# Constants
+# ==================================================
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
@@ -27,9 +30,16 @@ STATIC_DIR = PROJECT_ROOT / "static"
 MAP_IMAGE_PATH = STATIC_DIR / "map_up.jpg"
 BANNER_PATH = STATIC_DIR / "banner.png"
 
+# ==================================================
+# Load Trails
+# ==================================================
 trails = gpd.read_parquet(PROCESSED_PATH)
 
 st.set_page_config(page_title = "What's UP Outdoors.", initial_sidebar_state = "expanded", layout="wide")
+
+# ==================================================
+# Sidebar 
+# ==================================================
 st.sidebar.title("What's UP Outdoors")
 st.sidebar.write(
     "Discover hiking trails across Michigan’s Upper Peninsula and explore nearby "
@@ -41,6 +51,10 @@ st.sidebar.caption(
 )
 st.sidebar.image(MAP_IMAGE_PATH)
 
+
+# ==================================================
+# ZIP Code Search
+# ==================================================
 def reset_search():
     """Resets zip to reset table"""
     st.session_state.zipcode = ""
@@ -63,7 +77,6 @@ if zipcode:
 
 nearby_trails = trails.copy()
 search_completed = False
-
 
 if zipcode:
     try: 
@@ -120,7 +133,9 @@ def display_trails_dataframe(trails, selectable=False):
         **dataframe_options,
     )
 
-
+# ==================================================
+# Main Page with Tabs
+# ==================================================
 st.image(BANNER_PATH)
 st.subheader("What's UP Outdoors: Upper Peninsula Trail Explorer")
 
