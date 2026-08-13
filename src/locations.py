@@ -7,7 +7,6 @@ import pgeocode
 from shapely.geometry import Point
 
 
-
 ZIP_LOOKUP = pgeocode.Nominatim("us")
 ZIP_PATTERN = re.compile(r"^\d{5}$")
 
@@ -21,7 +20,6 @@ def normalize_zipcode(zipcode):
     return normalized_zipcode
 
 
-
 def zip_to_point(zipcode):
     """Converts ZIP code to longitude and latitude point."""
 
@@ -33,3 +31,20 @@ def zip_to_point(zipcode):
         raise ValueError("ZIP code could not be resolved.")
 
     return Point(location.longitude, location.latitude)
+
+
+def get_zip_info(zipcode):
+    """Return basic location infoation for a U.S. Zip code."""
+    normalized_zipcode = normalize_zipcode(zipcode)
+
+    location = ZIP_LOOKUP.query_postal_code(normalized_zipcode)
+
+    if pd.isna(location.latitude) or pd.isna(location.longitude):
+        raise ValueError("ZIP code could not be resolved.")
+    
+    return {
+        "zipcode": normalized_zipcode,
+        "place": location.place_name,
+        "county": location.county_name,
+        "state": location.state_name
+    }

@@ -8,7 +8,8 @@ from streamlit_folium import st_folium
 
 from src.locations import (
     normalize_zipcode, 
-    zip_to_point
+    zip_to_point,
+    get_zip_info
 )
 from src.spatial import (
     find_nearby_trails, 
@@ -41,12 +42,24 @@ st.sidebar.caption(
 st.sidebar.image(MAP_IMAGE_PATH)
 
 def reset_search():
+    """Resets zip to reset table"""
     st.session_state.zipcode = ""
-
 
 zipcode = st.sidebar.text_input("Enter UP Zipcode: ", key="zipcode")
 radius = st.sidebar.radio("Search Radius: ", VALID_SEARCH_RADII, horizontal = True)
 st.sidebar.button("Reset to all trails.", on_click=reset_search)
+
+if zipcode: 
+    zip_info = get_zip_info(zipcode)
+    st.sidebar.markdown(
+        f"""
+    **ZIP:** {zip_info["zipcode"]}  
+    **City:** {zip_info["place"]}  
+    **County:** {zip_info["county"]}  
+    **State:** {zip_info["state"]}
+    """
+    )     
+
 
 nearby_trails = trails.copy()
 search_completed = False
@@ -65,14 +78,9 @@ if zipcode:
 
         nearby_trails["DistanceToTrailMiles"] = distance_to_trails(nearby_trails, zip_point)
         search_completed = True
-        
+
     except ValueError as exc:
         st.sidebar.error(str(exc))
-
-
-
-
-
 
 def display_trails_dataframe(trails, selectable=False):
     """Display trail data with readable Streamlit column formatting."""
@@ -156,9 +164,5 @@ with tab3:
     else:
         st.info("Click on a trail in tab 1 to see details.")
 
-
-
-if zipcode:
-    st.write(f"You have entered zipcode: {zipcode}")
 
 st.divider()
