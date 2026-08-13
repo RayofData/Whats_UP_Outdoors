@@ -31,14 +31,18 @@ BANNER_PATH = STATIC_DIR / "banner.png"
 
 VALID_SEARCH_RADII = [10, 25, 50]
 
-# ==================================================
-# Load Trails
-# ==================================================
-trails = gpd.read_parquet(PROCESSED_PATH)
-
 TITLE = "What's UP Outdoors."
 
 st.set_page_config(page_title = TITLE, initial_sidebar_state = "expanded", layout="wide")
+
+# ==================================================
+# Load Trails
+# ==================================================
+@st.cache_data
+def load_trails(): 
+    return gpd.read_parquet(PROCESSED_PATH)
+
+trails = load_trails()
 
 # ==================================================
 # Sidebar 
@@ -176,6 +180,11 @@ with tab3:
     if selected_rows:
         row_idx = selected_rows[0]
         selected_data = nearby_trails.iloc[[row_idx]]
+
+        st.session_state.selected_trail = (
+            selected_data["HikingName"],
+            selected_data["County"]
+        )
 
         display_trails_dataframe(selected_data, selectable=False)
 

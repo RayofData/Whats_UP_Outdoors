@@ -10,7 +10,7 @@ MAX_TRAIL_RESULTS = 20
 
 
 def project_point(point):
-    """Reproject a Shapely point between coordinate reference systems."""
+    """Project a WGS 84 point to Michigan GeoRef."""
     point_series = gpd.GeoSeries([point], crs="EPSG:4326")
 
     return point_series.to_crs(MICHIGAN_GEOREF).iloc[0]
