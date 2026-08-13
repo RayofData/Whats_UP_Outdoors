@@ -1,6 +1,6 @@
 """Clean, normalize, group, and summarize trail data."""
 
-import pandas as pd 
+import pandas as pd
 
 DROP_COLUMNS = [
     "Peninsula",
@@ -238,3 +238,5 @@ def add_length_category(trails):
     )
 
     return categorized
+
+

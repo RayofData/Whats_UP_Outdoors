@@ -1,51 +1,52 @@
-"""Handles logic for distance calculations"""
+"""ZIP normalization, validation, `pgeocode` lookup, and user point creation."""
 
-from pathlib import Path
+import re
 
-import geopandas as gpd 
+import pandas as pd
 import pgeocode
 from shapely.geometry import Point
 
 
-PROCESSED_DIR = Path("data/processed")
-PROCESSED_PATH = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
-
-MICHIGAN_GEOREF = "EPSG:3078"
-METERS_PER_MILE = 1609.344
-
-trails = gpd.read_parquet(PROCESSED_PATH)
-trails_projected = trails.to_crs(MICHIGAN_GEOREF)
+ZIP_LOOKUP = pgeocode.Nominatim("us")
+ZIP_PATTERN = re.compile(r"^\d{5}$")
+ZIP_ERROR = "Not a Valid U.S. ZIP code, must contain exactly 5 digits."
 
 
+def normalize_zipcode(zipcode):
+    """Normalize and validate a five-digit U.S. ZIP code."""
+    normalized_zipcode = str(zipcode).strip()
 
-user_zipcode = "49781" #St. Ignace
+    if not ZIP_PATTERN.fullmatch(normalized_zipcode):
+        raise ValueError(ZIP_ERROR)
 
-zip_lookup = pgeocode.Nominatim("us")
+    return normalized_zipcode
 
-location = zip_lookup.query_postal_code(user_zipcode)
 
-user_point = Point(
-    location.longitude,
-    location.latitude
-)
+def zip_to_point(zipcode):
+    """Converts ZIP code to longitude and latitude point."""
 
-user_location = gpd.GeoDataFrame(
-    {"zipcode": [user_zipcode]},
-    geometry=[user_point],
-    crs="EPSG:4326"
-)
-user_location_projected = user_location.to_crs(MICHIGAN_GEOREF)
+    normalized_zipcode = normalize_zipcode(zipcode)
 
-user_point_projected = user_location_projected.geometry.iloc[0]
+    location = ZIP_LOOKUP.query_postal_code(normalized_zipcode)
 
-trails_projected["DistanceMiles"] = (
-    trails_projected.geometry.distance(user_point_projected)
-    / METERS_PER_MILE
-)
+    if pd.isna(location.latitude) or pd.isna(location.longitude):
+        raise ValueError(ZIP_ERROR)
 
-print(
-    trails_projected
-    .sort_values("DistanceMiles")
-    .head(5)
-)
+    return Point(location.longitude, location.latitude)
 
+
+def get_zip_info(zipcode):
+    """Return basic location information for a U.S. Zip code."""
+    normalized_zipcode = normalize_zipcode(zipcode)
+
+    location = ZIP_LOOKUP.query_postal_code(normalized_zipcode)
+
+    if pd.isna(location.latitude) or pd.isna(location.longitude):
+        raise ValueError(ZIP_ERROR)
+    
+    return {
+        "zipcode": normalized_zipcode,
+        "place": location.place_name,
+        "county": location.county_name,
+        "state": location.state_name
+    }
