@@ -140,7 +140,7 @@ def test_find_nearby_trails_limits_results_to_20():
     
 
 def test_find_nearby_trails_returns_empty_when_none_within_radius():
-    """A valid search should return an empty when no trails are within the radius."""
+    """A valid search should return an empty GeoDataFrame when no trails are within the radius."""
     user_point = Point(-84.7, 46.0)
 
     projected_point = (
