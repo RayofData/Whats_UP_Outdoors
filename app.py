@@ -45,7 +45,7 @@ BANNER_PATH = STATIC_DIR / "banner.png"
 
 VALID_SEARCH_RADII = [10, 25, 50]
 
-TITLE = "What's UP Outdoors."
+TITLE = "What's UP Outdoors"
 
 st.set_page_config(page_title = TITLE, initial_sidebar_state = "expanded", layout="wide")
 
@@ -119,7 +119,6 @@ radius = st.sidebar.radio(
 
 st.sidebar.button("Reset to all trails.", on_click=reset_search)
 
-
 nearby_trails = trails.copy()
 search_completed = False
 
@@ -190,6 +189,7 @@ def display_trails_dataframe(trails, selectable=False):
         **dataframe_options,
     )
 
+
 def display_species_groups(observations):
     """Display top species within each supported taxon group."""
     taxon_groups = split_observations_by_taxon(observations)
@@ -202,7 +202,6 @@ def display_species_groups(observations):
             continue
     
         top_species = summarize_species(group_df)
-
 
         image_col, count_col, species_col, date_col = st.columns(
             [1,1,3,2]
@@ -232,6 +231,7 @@ def display_species_groups(observations):
 
             with date_col:
                 st.write(row["most_recent"].strftime("%Y-%m-%d"))
+                
 # ==================================================
 # Main Page with Tabs
 # ==================================================
@@ -246,6 +246,9 @@ tab1, tab2, tab3 = st.tabs([
 
 st.divider()
 
+# ==================================================
+# Tab 1: Trails table
+# ==================================================
 with tab1:
     st.session_state.selected_rows = None
     if search_completed and nearby_trails.empty:
@@ -260,6 +263,9 @@ with tab1:
         st.subheader("Metrics")
         st.metric(label="Total Trails", value=len(nearby_trails))
 
+# ==================================================
+# Tab 2: Map
+# ==================================================
 with tab2: 
     trail_map = build_trail_map(nearby_trails, zipcode)
     st_folium(trail_map, height=300)
@@ -268,6 +274,9 @@ with tab2:
     st.subheader("Metrics")
     st.metric(label="Total Trails", value=len(nearby_trails))
 
+# ==================================================
+# Tab 3: Specific Trail details
+# ==================================================
 with tab3:
     if st.session_state.selected_rows:
         row_idx = st.session_state.selected_rows[0]
@@ -285,10 +294,5 @@ with tab3:
         filtered_historical_observations = filter_observations_near_trail(selected_trail, historical_observations)
         display_species_groups(filtered_historical_observations)
 
-
-
-
     else:
         st.info("Click on a trail in tab 1 to see details.")
-
-

@@ -46,6 +46,7 @@ def find_nearby_trails(trails, user_point, radius_miles):
         .copy()
     )
 
+
 def distances_to_trail(trail, points):
     """Calculate observation-point distances to a selected trail in miles."""
     if trail.crs is None or points.crs is None:
@@ -59,11 +60,11 @@ def distances_to_trail(trail, points):
 
     trail_geometry = trail_projected.geometry.iloc[0]
 
-
     return (
         points_projected.geometry.distance(trail_geometry)
         / METERS_PER_MILE
     )
+
 
 def filter_observations_near_trail(trail, observations, miles = 2):
     """Return observations within a specified milage of a trail"""

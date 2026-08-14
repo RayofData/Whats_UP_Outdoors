@@ -1,4 +1,4 @@
-"""iNaturalist helpers for API and historical data loading."""
+"""iNaturalist observation processing, normalization, grouping, and summary utilities."""
 
 import geopandas as gpd 
 
@@ -12,7 +12,6 @@ TAXON_GROUPS = {
     "Insects": "Insecta",
 }
 
-
 INATURALIST_EXPORT_COLUMNS = [
     "id",
     "observed_on",
@@ -24,13 +23,11 @@ INATURALIST_EXPORT_COLUMNS = [
     "taxon_species_name",
 ]
 
-
 OBSERVATION_COLUMN_RENAMES = {
     "id": "observation_id",
     "iconic_taxon_name": "iconic_taxon",
     "taxon_species_name": "scientific_name",
 }
-
 
 OBSERVATION_COLUMNS = [
     "observation_id",
@@ -72,6 +69,7 @@ def convert_to_geodataframe(observations):
 
     return observations
 
+
 def split_observations_by_taxon(observations):
     """Split observations into DataFrames by supported taxon group."""
     return {
@@ -80,6 +78,7 @@ def split_observations_by_taxon(observations):
         ].copy()
         for display_name, taxon_name in TAXON_GROUPS.items()
     }
+
 
 def summarize_species(observations):
     """Return the top 10 species by count, breaking ties by recent date."""
