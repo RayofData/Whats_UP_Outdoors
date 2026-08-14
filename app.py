@@ -259,7 +259,7 @@ with tab1:
         st.metric(label="Total Trails", value=len(nearby_trails))
 
 with tab2: 
-    trail_map = build_trail_map(nearby_trails)
+    trail_map = build_trail_map(nearby_trails, zipcode)
     st_folium(trail_map, height=300)
 
     st.divider()
