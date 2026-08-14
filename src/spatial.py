@@ -45,3 +45,27 @@ def find_nearby_trails(trails, user_point, radius_miles):
         .head(MAX_TRAIL_RESULTS)
         .copy()
     )
+
+def distances_to_trail(trail, points):
+    """Calculate observation-point distances to a selected trail in miles."""
+    if trail.crs is None or points.crs is None:
+        raise ValueError("Trail and observation GeoDataFrames must have a defined crs.")
+
+    trail_projected = trail.to_crs(MICHIGAN_GEOREF)
+    points_projected = points.to_crs(MICHIGAN_GEOREF)
+
+    if len(trail) != 1:
+        raise ValueError("Expected exactly one selected trail.")
+
+    trail_geometry = trail_projected.geometry.iloc[0]
+
+
+    return (
+        points_projected.geometry.distance(trail_geometry)
+        / METERS_PER_MILE
+    )
+
+def filter_observations_near_trail(trail, observations, distances, miles = 2):
+    """Return observations within a specified milage of a trail"""
+    distances = distance_to_trails(trail, observations)
+    return observations.loc[distances <= miles].copy()

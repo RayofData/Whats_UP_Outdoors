@@ -23,7 +23,7 @@ from src.maps import build_trail_map
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
-PROCESSED_PATH = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
+PROCESSED_PATH_TRAILS = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
 
 STATIC_DIR = PROJECT_ROOT / "static"
 MAP_IMAGE_PATH = STATIC_DIR / "map_up.jpg"
@@ -40,7 +40,7 @@ st.set_page_config(page_title = TITLE, initial_sidebar_state = "expanded", layou
 # ==================================================
 @st.cache_data
 def load_trails(): 
-    return gpd.read_parquet(PROCESSED_PATH)
+    return gpd.read_parquet(PROCESSED_PATH_TRAILS)
 
 trails = load_trails()
 

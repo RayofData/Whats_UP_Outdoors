@@ -1,3 +1,8 @@
+"""iNaturalist helpers for API and historical data loading."""
+
+import geopandas as gpd 
+
+
 TAXON_GROUPS = {
     "Birds": "Aves",
     "Mammals": "Mammalia",
@@ -46,3 +51,17 @@ def normalize_observation_columns(observations):
     )
 
     return normalized[OBSERVATION_COLUMNS].copy()
+
+
+def convert_to_geodataframe(observations):
+    """Convert observations to a WGS 84 GeoDataFrame with Point geometry."""
+    observations = gpd.GeoDataFrame(
+        observations.copy(),
+        geometry=gpd.points_from_xy(
+            observations["longitude"],
+            observations["latitude"]
+        ),
+        crs="EPSG:4326"
+    )
+
+    return observations
