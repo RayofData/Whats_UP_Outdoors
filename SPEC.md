@@ -165,10 +165,9 @@ observed_on
 common_name
 scientific_name
 iconic_taxon
-thumbnail_url
+image_url
 longitude
 latitude
-positional_accuracy
 ```
 
 ## 7. ZIP Search and Nearby Trails

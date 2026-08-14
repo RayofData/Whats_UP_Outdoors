@@ -8,7 +8,11 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.inaturalist import TAXON_GROUPS
+from src.inaturalist import (
+    INATURALIST_EXPORT_COLUMNS,  
+    TAXON_GROUPS,
+    normalize_observation_columns
+)
 
 
 RAW_PATH = (
@@ -25,47 +29,84 @@ PROCESSED_PATH = (
     / "inaturalist_up_fall_observations.parquet"
 )
 
-COLUMNS = [
-        "id",
-        "observed_on",
-        "quality_grade",
-        "image_url",
-        "latitude",
-        "longitude",
-        "common_name",
-        "iconic_taxon_name",
-        "taxon_species_name",
-    ]
 
-up_historical = pd.read_csv(RAW_PATH, usecols=COLUMNS)
+def prepare_historical_observations(observations):
+    """Clean and normalize historical iNaturalist observations."""
+    observations = observations.copy()
 
-up_historical["observed_on"] = pd.to_datetime(
-    up_historical["observed_on"],
-    errors="coerce"
-)
-
-up_historical = up_historical.rename(
-        columns={
-            "id": "observation_id",
-            "image_url": "thumbnail_url",
-            "iconic_taxon_name": "iconic_taxon",
-            "taxon_species_name": "scientific_name",
-        }
+    observations["observed_on"] = pd.to_datetime(
+        observations["observed_on"],
+        errors="coerce"
     )
-up_historical = up_historical.loc[
-    up_historical["iconic_taxon"].isin(TAXON_GROUPS.values())
-    & up_historical["scientific_name"].notna()
-    & up_historical["latitude"].notna()
-    & up_historical["longitude"].notna()
-].copy()
+    
+    observations = normalize_observation_columns(observations)
+    
+    for column in ["latitude", "longitude"]:
+        observations[column] = pd.to_numeric(
+            observations[column],
+            errors="coerce"
+        )
+    
+    observations = observations.loc[
+        observations["latitude"].between(-90, 90)
+        & observations["longitude"].between(-180, 180)
+    ].copy()
 
-up_historical = up_historical.drop_duplicates(subset="observation_id")
+    observations["scientific_name"] = (
+        observations["scientific_name"]
+        .astype("string")
+        .str.strip()
+        .replace("", pd.NA)
+    )
 
-up_historical.to_parquet(
-    PROCESSED_PATH,
-    index = False,
-    compression="zstd"
-)
+    observations = observations.loc[
+        observations["iconic_taxon"].isin(TAXON_GROUPS.values())
+        & observations["scientific_name"].notna()
+        & observations["latitude"].notna()
+        & observations["longitude"].notna()
+        & observations["observed_on"].notna()
+        & observations["observation_id"].notna()
+    ].copy()
 
-print(f"Observations saved: {len(up_historical):,}")
-print(f"Saved to: {PROCESSED_PATH}")
+    observations = observations.drop_duplicates(subset="observation_id")
+
+   
+    return observations
+
+def main():
+    up_historical = pd.read_csv(
+    RAW_PATH, 
+    usecols = INATURALIST_EXPORT_COLUMNS
+    )
+
+    up_historical = prepare_historical_observations(
+        up_historical
+    )
+
+    try:
+        PROCESSED_PATH.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+    except OSError as exc:
+        raise RuntimeError(
+            f"Could not create output directories: {exc}"
+        ) from exc
+
+
+    if not up_historical.empty: 
+        up_historical.to_parquet(
+            PROCESSED_PATH,
+            index = False,
+            compression="zstd"
+        )
+    else:
+        raise ValueError(
+            "Historical observation processing produced no records."
+        )
+
+    print(f"Observations saved: {len(up_historical):,}")
+    print(f"Saved to: {PROCESSED_PATH}")
+
+if __name__ == "__main__":
+    main()
