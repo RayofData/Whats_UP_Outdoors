@@ -149,6 +149,9 @@ if zipcode:
     except ValueError as exc:
         st.sidebar.error(str(exc))
 
+# ==================================================
+# Display functions
+# ==================================================
 def display_trails_dataframe(trails, selectable=False):
     """Display trail data with readable Streamlit column formatting."""
     dataframe_options = {
@@ -187,6 +190,46 @@ def display_trails_dataframe(trails, selectable=False):
         **dataframe_options,
     )
 
+def display_species_groups(observations):
+    """Display top species within each supported taxon group."""
+    taxon_groups = split_observations_by_taxon(observations)
+
+    for group_name, group_df in taxon_groups.items():  
+        st.subheader(group_name)
+
+        if group_df.empty:
+            st.write(f"No Historical Observation for {group_name}")
+            continue
+    
+        top_species = summarize_species(group_df)
+
+
+        image_col, count_col, species_col, date_col = st.columns(
+            [1,1,3,2]
+        )
+        image_col.write("**Image**")
+        count_col.write("**Observations**")
+        species_col.write("**Species**")
+        date_col.write("**Most Recent**")
+
+        for _, row in top_species.iterrows():
+            image_col, count_col, species_col, date_col = st.columns(
+                [1,1,3,2]
+            )            
+            with image_col:
+                if row["image_url"]:
+                    st.image(
+                        row["image_url"],
+                        width=150
+                    )
+            with count_col:
+                st.write(row["observed_count"])
+            
+            with species_col:
+                st.write(row["common_name"])
+
+            with date_col:
+                st.write(row["most_recent"].strftime("%Y-%m-%d"))
 # ==================================================
 # Main Page with Tabs
 # ==================================================
@@ -231,47 +274,16 @@ with tab3:
         st.subheader(f"Trail: {selected_trail["HikingName"].iloc[0]} in {selected_trail["County"].iloc[0]} County")
 
         display_trails_dataframe(selected_trail, selectable=False)
+      
 
-        st.subheader("iNaturalist Historical Data Sept-Oct 2015-2025")
+
         
-
+        st.header("iNaturalist Historical Observations Sept-Oct 2015-2025")
         distances = distances_to_trail(selected_trail, historical_observations)
-
         filtered_historical_observations = filter_observations_near_trail(selected_trail, historical_observations)
-        historical_taxon_groups = split_observations_by_taxon(filtered_historical_observations)
+        display_species_groups(filtered_historical_observations)
 
-        for group_name, group_df in historical_taxon_groups.items():
-            top_species = summarize_species(group_df)
-            
-            
-            st.subheader(group_name)
 
-            if group_df.empty:
-                st.write(f"No Historical Observation for {group_name}")
-
-            for _, row in top_species.iterrows():
-                image_col, count_col, species_col, date_col = st.columns(
-                    [1,1,3,2]
-                )
-                image_col.write("**Image**")
-                count_col.write("**Observations**")
-                species_col.write("**Species**")
-                date_col.write("**Most Recent**")
-
-                with image_col:
-                    if row["image_url"]:
-                        st.image(
-                            row["image_url"],
-                            width=150
-                        )
-                with count_col:
-                    st.write(row["observed_count"])
-                
-                with species_col:
-                    st.write(row["common_name"])
-
-                with date_col:
-                    st.write(row["most_recent"].strftime("%Y-%m-%d"))
 
 
     else:
