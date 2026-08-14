@@ -195,10 +195,10 @@ def display_species_groups(observations):
     taxon_groups = split_observations_by_taxon(observations)
 
     for group_name, group_df in taxon_groups.items():  
-        st.subheader(group_name)
+        st.subheader(f"{group_name} — {len(group_df):,} observations")
 
         if group_df.empty:
-            st.write(f"No Historical Observation for {group_name}")
+            st.write(f"No Historical observations found for {group_name}")
             continue
     
         top_species = summarize_species(group_df)
@@ -217,11 +217,13 @@ def display_species_groups(observations):
                 [1,1,3,2]
             )            
             with image_col:
-                if row["image_url"]:
+                if pd.notna(row["image_url"]) and row["image_url"]:
                     st.image(
                         row["image_url"],
                         width=150
                     )
+                else:
+                    st.write("No Image")
             with count_col:
                 st.write(row["observed_count"])
             
