@@ -222,7 +222,7 @@ def display_species_groups(observations):
                         width=150
                     )
                 else:
-                    st.write("No Image")
+                    st.write("---------\nNo Image\n---------")
             with count_col:
                 st.write(row["observed_count"])
             
@@ -238,10 +238,11 @@ def display_species_groups(observations):
 st.image(BANNER_PATH)
 st.subheader(f"{TITLE}: Upper Peninsula Trail Explorer")
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "Discover Trails",
     "Trail Map",
     "Trail Details",
+    "Favorite Trails"
 ])
 
 st.divider()
@@ -296,3 +297,9 @@ with tab3:
 
     else:
         st.info("Click on a trail in tab 1 to see details.")
+
+# ==================================================
+# Tab 4: Favorite Trails
+# ==================================================
+with tab4:
+    st.write("Favorites Coming Soon")
