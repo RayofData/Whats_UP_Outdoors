@@ -43,6 +43,12 @@ OBSERVATION_COLUMNS = [
     "latitude",
 ]
 
+OBSERVATION_DISPLAY_COLUMNS = [
+    "image_url",
+    "observed_count",
+    "common_name",
+    "most_recent",
+]
 
 def normalize_observation_columns(observations):
     """Normalize observation columns to the common application schema."""
@@ -65,3 +71,33 @@ def convert_to_geodataframe(observations):
     )
 
     return observations
+
+def split_observations_by_taxon(observations):
+    """Split observations into DataFrames by supported taxon group."""
+    return {
+        display_name: observations.loc[
+            observations["iconic_taxon"] == taxon_name
+        ].copy()
+        for display_name, taxon_name in TAXON_GROUPS.items()
+    }
+
+def summarize_species(observations):
+    """Return the top 10 species by count, breaking ties by recent date."""
+
+    summary = (
+        observations.groupby("scientific_name", as_index=False)
+        .agg(
+            observed_count=("scientific_name","size"),
+            most_recent=("observed_on", "max"),
+            common_name=("common_name", "first"),
+            image_url=("image_url", "first")
+        )
+        .sort_values(
+            ["observed_count", "most_recent"],
+            ascending=[False,False]
+        )
+        .head(10)
+        .copy()
+    )
+
+    return summary

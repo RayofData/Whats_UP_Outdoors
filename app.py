@@ -4,6 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 import geopandas as gpd 
+import pandas as pd
 from streamlit_folium import st_folium
 
 from src.locations import (
@@ -13,9 +14,21 @@ from src.locations import (
 )
 from src.spatial import (
     find_nearby_trails, 
-    distance_to_trails
+    distance_to_trails,
+    distances_to_trail
 )
-from src.maps import build_trail_map
+from src.spatial import (
+    filter_observations_near_trail
+)
+from src.maps import (
+    build_trail_map
+)
+from src.inaturalist import (
+    OBSERVATION_DISPLAY_COLUMNS,
+    convert_to_geodataframe,
+    split_observations_by_taxon,
+    summarize_species
+)
 
 # ==================================================
 # Constants
@@ -24,6 +37,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 PROCESSED_PATH_TRAILS = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
+PROCESSED_PATH_OBS = PROCESSED_DIR / "inaturalist_up_fall_observations.parquet"
 
 STATIC_DIR = PROJECT_ROOT / "static"
 MAP_IMAGE_PATH = STATIC_DIR / "map_up.jpg"
@@ -36,13 +50,20 @@ TITLE = "What's UP Outdoors."
 st.set_page_config(page_title = TITLE, initial_sidebar_state = "expanded", layout="wide")
 
 # ==================================================
-# Load Trails
+# Load Data
 # ==================================================
 @st.cache_data
 def load_trails(): 
     return gpd.read_parquet(PROCESSED_PATH_TRAILS)
 
 trails = load_trails()
+
+@st.cache_data
+def load_historical_observations():
+    return pd.read_parquet(PROCESSED_PATH_OBS)
+
+historical_observations = load_historical_observations()
+historical_observations = convert_to_geodataframe(historical_observations)
 
 # ==================================================
 # Sidebar 
@@ -205,11 +226,53 @@ with tab2:
 with tab3:
     if st.session_state.selected_rows:
         row_idx = st.session_state.selected_rows[0]
-        selected_data = nearby_trails.iloc[[row_idx]]
+        selected_trail = nearby_trails.iloc[[row_idx]]
 
-        st.subheader(f"Trail: {selected_data["HikingName"].iloc[0]} in {selected_data["County"].iloc[0]} County")
+        st.subheader(f"Trail: {selected_trail["HikingName"].iloc[0]} in {selected_trail["County"].iloc[0]} County")
 
-        display_trails_dataframe(selected_data, selectable=False)
+        display_trails_dataframe(selected_trail, selectable=False)
+
+        st.subheader("iNaturalist Historical Data Sept-Oct 2015-2025")
+        
+
+        distances = distances_to_trail(selected_trail, historical_observations)
+
+        filtered_historical_observations = filter_observations_near_trail(selected_trail, historical_observations)
+        historical_taxon_groups = split_observations_by_taxon(filtered_historical_observations)
+
+        for group_name, group_df in historical_taxon_groups.items():
+            top_species = summarize_species(group_df)
+            
+            
+            st.subheader(group_name)
+
+            if group_df.empty:
+                st.write(f"No Historical Observation for {group_name}")
+
+            for _, row in top_species.iterrows():
+                image_col, count_col, species_col, date_col = st.columns(
+                    [1,1,3,2]
+                )
+                image_col.write("**Image**")
+                count_col.write("**Observations**")
+                species_col.write("**Species**")
+                date_col.write("**Most Recent**")
+
+                with image_col:
+                    if row["image_url"]:
+                        st.image(
+                            row["image_url"],
+                            width=150
+                        )
+                with count_col:
+                    st.write(row["observed_count"])
+                
+                with species_col:
+                    st.write(row["common_name"])
+
+                with date_col:
+                    st.write(row["most_recent"].strftime("%Y-%m-%d"))
+
 
     else:
         st.info("Click on a trail in tab 1 to see details.")

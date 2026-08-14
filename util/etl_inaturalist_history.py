@@ -30,6 +30,7 @@ PROCESSED_PATH = (
 )
 
 
+
 def prepare_historical_observations(observations):
     """Clean and normalize historical iNaturalist observations."""
     observations = observations.copy()
