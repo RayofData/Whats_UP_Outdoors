@@ -1,0 +1,30 @@
+{
+  "expected_record_count": 2437,
+  "downloaded_record_count": 2437,
+  "counts_match": true,
+  "crs": "EPSG:4326",
+  "geometry_types": {
+    "LineString": 2423,
+    "MultiLineString": 14
+  },
+  "missing_geometry_count": 0,
+  "empty_geometry_count": 0,
+  "invalid_geometry_count": 0,
+  "duplicated_object_id_count": 0,
+  "missing_values": {
+    "OBJECTID": 0,
+    "DNRTrail": 0,
+    "TrailNamePrimary": 0,
+    "HikingName": 0,
+    "FacilityName": 0,
+    "County": 0,
+    "Peninsula": 0,
+    "Hiking": 0,
+    "TrailUseCategory": 0,
+    "OpenClosedStatusNonmotor": 0,
+    "SurfaceType": 0,
+    "TrailWidthFeet": 0,
+    "ADAAccessible": 0,
+    "SegmentLengthMiles": 0
+  }
+}
