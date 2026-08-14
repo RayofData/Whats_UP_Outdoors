@@ -21,6 +21,13 @@ The MVP emphasizes reproducible geospatial processing, API integration, automate
 - Save favorite trails during the current Streamlit session
 - Export favorites as a CSV file
 
+## Future Enhancements
+
+* **AI-generated natural-language summaries:** Use an AI API to summarize selected trail attributes and nearby observation data in clear, grounded language.
+* **Automated data refresh pipeline:** Automate DNR data refreshes and validation through a scheduled ETL workflow, such as GitHub Actions.
+* **Downloadable trail reports:** Generate a report for a selected trail containing trail details, maps, observation summaries, and other key information.
+
+
 ## Application Layout
 
 The Streamlit app uses three main tabs:
@@ -31,13 +38,23 @@ The Streamlit app uses three main tabs:
 
 ## Architecture
 
-The project uses three executable entry points:
+The project separates application runtime, offline ETL workflows, and reusable application logic.
 
-- `prep_data.py` downloads and processes Michigan DNR trail data.
-- `prep_historical_observations.py` documents the one-time conversion of the manually downloaded historical iNaturalist CSV export into an app-ready Parquet file.
-- `app.py` runs the Streamlit interface.
+### Application
+app.py is the Streamlit application entry point.
+The deployed application reads the processed trail and historical iNaturalist Parquet datasets directly from data/processed/.
+Runtime API requests, spatial operations, mapping, and interface logic are delegated to modules under src/.
 
-Reusable code is organized under `src/`:
+### Offline ETL utilities
+
+Data-preparation workflows are stored under util/:
+
+util/etl_dnr_trails.py downloads Michigan DNR trail data, validates and transforms the source data, and creates the app-ready trail GeoParquet dataset.
+util/etl_inaturalist_history.py converts the manually downloaded historical iNaturalist CSV export into the compressed Parquet dataset used by the application.
+
+These ETL scripts are used to reproduce or refresh the processed datasets and are not required during normal application startup.
+
+### Reusable modules
 
 ```text
 src/
@@ -60,8 +77,6 @@ Spatial distance calculations use Michigan GeoRef (`EPSG:3078`). Folium map geom
 ```text
 Whats_UP_Outdoors/
 ├── app.py
-├── prep_data.py
-├── prep_historical_observations.py
 ├── README.md
 ├── SPEC.md
 ├── requirements.txt
@@ -69,6 +84,9 @@ Whats_UP_Outdoors/
 ├── static/
 │   ├── banner.png
 │   └── map_up.jpg
+├── util/
+│   ├── etl_dnr_trails.py
+│   └── etl_inaturalist_history.py
 ├── data/
 │   ├── raw/
 │   └── processed/
@@ -86,68 +104,68 @@ Whats_UP_Outdoors/
 └── tests/
 ```
 
-## Data
+## Run the Application
+### Browser
 
-### Michigan DNR trails
+What’s UP Outdoors is intended to be deployed with Streamlit Community Cloud.
 
-`prep_data.py` downloads current Upper Peninsula hiking-trail data from the Michigan DNR ArcGIS REST API, validates the response, cleans and groups trail segments, and writes the app-ready GeoParquet dataset.
+Once deployed, the application can be opened directly in a web browser without cloning the repository, installing Python, or preparing the source datasets locally.
 
-Trail length uses the DNR-reported segment lengths aggregated for each grouped trail. During development, projected geometry lengths are compared manually in the audit workflow to verify that the reported values are reasonable for the MVP.
+Live application: *Streamlit deployment link will be added here.*
 
-### iNaturalist observations
+The processed DNR trail and historical iNaturalist datasets required by the application are bundled with the repository for the deployed demo.
 
-Recent observations are requested from the iNaturalist API at runtime for the previous 21 days.
+### Local development
 
-Historical observations come from a manually downloaded export that is already scoped to the Upper Peninsula area and September–October 2015–2025. The raw CSV remains local. `prep_historical_observations.py` documents the cleaning and conversion process used to create:
-
-```text
-data/processed/inaturalist_historical_fall_observations.parquet
-```
-
-The processed historical Parquet file is committed for the local demo.
-
-iNaturalist records represent reported observations, not a guarantee that a species will be present.
-
-## Setup
+Local setup is only required for development or reproducing the data-processing workflows.
 
 Create and activate a Python 3.12 virtual environment:
 
-```powershell
+```
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
 Install dependencies:
-
-```powershell
+```
 python -m pip install -r requirements.txt
 ```
-
-## Run the Project
-
-Prepare the DNR trail data:
-
-```powershell
-python prep_data.py
-```
-
 Run the automated tests:
-
-```powershell
+```
 pytest
 ```
-
-Start the Streamlit application:
-
-```powershell
+Start the application locally:
+```
 streamlit run app.py
 ```
 
-## Data Sources
+### Rebuild the processed datasets
 
-- Michigan DNR Hiking Trails Open Data
-- iNaturalist Observations API and manually downloaded historical observations
-- GeoNames postal-code data through `pgeocode`
+The processed datasets are already available to the application. These commands are only needed when reproducing or refreshing the source-data pipelines.
+
+Rebuild the Michigan DNR trail dataset:
+```
+python util/etl_dnr_trails.py
+```
+Rebuild the historical iNaturalist dataset:
+```
+python util/etl_inaturalist_history.py
+```
+The historical iNaturalist workflow requires the [manually downloaded source CSV](https://www.inaturalist.org/observations/export?quality_grade=any&identifications=any&swlat=45.0764339&swlng=-90.4181358&nelat=48.3060628&nelng=-83.4335579&month%5B%5D=9&month%5B%5D=10&verifiable=true&d1=2015-01-01&spam=false) to be present under data/raw/.
+
+## Data and Sources
+
+What’s UP Outdoors uses three external data sources:
+
+* **Michigan DNR Hiking Trails Open Data** for Upper Peninsula trail geometry and attributes.
+* **iNaturalist** for recent and historical nature observations.
+* **GeoNames postal-code data through `pgeocode`** for ZIP-code lookup.
+
+The processed DNR trail dataset is produced by `util/etl_dnr_trails.py` from the Michigan DNR ArcGIS REST API. Trail segments are cleaned, grouped, and stored as an app-ready GeoParquet dataset.
+
+Recent iNaturalist observations are requested from the API at runtime for the previous 21 days. Historical observations come from a manually downloaded September–October 2015–2025 export and are converted to Parquet by `util/etl_inaturalist_history.py`.
+
+Processed datasets required by the deployed application are included in the repository. Raw source data remains local.
 
 ## Technologies
 
@@ -155,11 +173,12 @@ Python, pandas, GeoPandas, Shapely, Streamlit, Folium, streamlit-folium, Request
 
 ## Limitations
 
-- ZIP-code distance is straight-line spatial distance from the ZIP-code reference point to the trail geometry, not driving distance.
-- DNR attributes may be missing or vary across grouped trail segments.
-- Trail status reflects the DNR source field and may not represent current on-site conditions.
-- Historical iNaturalist observations are fixed to September and October 2015–2025.
-- Recent observation availability depends on the iNaturalist API.
-- The app does not provide navigation, safety guidance, or wildlife guarantees.
+* ZIP-to-trail distance is straight-line spatial distance to the trail geometry, not driving distance.
+* DNR attributes may be missing or vary across grouped trail segments.
+* Trail status reflects the DNR source data and may not represent current on-site conditions.
+* Historical iNaturalist observations are limited to September–October 2015–2025.
+* Recent observation availability depends on the iNaturalist API.
+* iNaturalist observations represent reported sightings and do not guarantee species presence.
+* The application does not provide navigation, safety guidance, or wildlife guarantees.
 
 See [`SPEC.md`](SPEC.md) for the complete MVP requirements.
