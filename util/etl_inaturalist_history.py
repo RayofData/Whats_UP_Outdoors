@@ -1,12 +1,14 @@
 """Convert the historical iNaturalist CSV export to compressed Parquet"""
 
+import sys 
 from pathlib import Path
 
 import pandas as pd 
 
-from src.inaturalist import TAXON_GROUPS
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+from src.inaturalist import TAXON_GROUPS
 
 
 RAW_PATH = (
