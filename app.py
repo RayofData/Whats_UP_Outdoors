@@ -7,6 +7,10 @@ import geopandas as gpd
 import pandas as pd
 from streamlit_folium import st_folium
 
+from src.trails import (
+    filter_trails
+)
+
 from src.locations import (
     normalize_zipcode, 
     zip_to_point,
@@ -15,7 +19,8 @@ from src.locations import (
 from src.spatial import (
     find_nearby_trails, 
     distance_to_trails,
-    distances_to_trail
+    distances_to_trail,
+    create_trail_buffer
 )
 from src.spatial import (
     filter_observations_near_trail
@@ -27,7 +32,19 @@ from src.inaturalist import (
     OBSERVATION_DISPLAY_COLUMNS,
     convert_to_geodataframe,
     split_observations_by_taxon,
-    summarize_species
+    summarize_species,
+    normalize_recent_observations
+)
+from src.apis.inaturalist_api import (
+    fetch_recent_observations
+)
+
+from src.streamlit_ui import (
+    reset_selection,
+    reset_search,
+    display_trails_dataframe,
+    display_species_groups,
+    display_metrics,
 )
 
 # ==================================================
@@ -47,7 +64,11 @@ VALID_SEARCH_RADII = [10, 25, 50]
 
 TITLE = "What's UP Outdoors"
 
-st.set_page_config(page_title = TITLE, initial_sidebar_state = "expanded", layout="wide")
+st.set_page_config(
+    page_title = TITLE, 
+    initial_sidebar_state = "expanded", 
+    layout="wide"
+)
 
 # ==================================================
 # Load Data
@@ -66,7 +87,7 @@ historical_observations = load_historical_observations()
 historical_observations = convert_to_geodataframe(historical_observations)
 
 # ==================================================
-# Sidebar 
+# Session States
 # ==================================================
 if "selected_rows" not in st.session_state:
     st.session_state.selected_rows = []
@@ -77,27 +98,24 @@ if "selected_trail" not in st.session_state:
 if "search_version" not in st.session_state:
     st.session_state.search_version = 0
 
-
-def reset_selection():
-    """Clear the selected trail when search criteria change."""
-    st.session_state.selected_rows = []
-    st.session_state.selected_trail = None
-    st.session_state.search_version += 1
+length_categories = []
+trail_name = ""
+surface_type = ""
 
 
-def reset_search():
-    """Resets zip to reset table"""
-    st.session_state.zipcode = ""
+# ==================================================
+# Side Bar
+# ==================================================
+st.sidebar.title("Find Trails Near You")
 
-st.sidebar.title(TITLE)
 st.sidebar.write(
-    "Discover hiking trails across Michigan’s Upper Peninsula and explore nearby "
-    "iNaturalist observations."
+    "Enter a ZIP code and choose a search radius to find nearby Upper Peninsula trails."
 )
 
 st.sidebar.caption(
-    "Enter a ZIP code and choose a search radius to find nearby trails."
+    "Search within 10, 25, or 50 miles of the selected ZIP code."
 )
+
 st.sidebar.image(MAP_IMAGE_PATH)
 
 
@@ -117,14 +135,12 @@ radius = st.sidebar.radio(
     on_change=reset_selection
 )
 
-st.sidebar.button("Reset to all trails.", on_click=reset_search)
-
-nearby_trails = trails.copy()
-search_completed = False
+trails_to_display = trails.copy()
 
 if zipcode: 
     try:
         zip_info = get_zip_info(zipcode)
+
         st.sidebar.markdown(
             f"""
         **ZIP:** {zip_info["zipcode"]}  
@@ -136,143 +152,119 @@ if zipcode:
 
         zip_point = zip_to_point(zipcode)
     
-        nearby_trails = find_nearby_trails(
-            nearby_trails, 
+        trails_to_display = find_nearby_trails(
+            trails, 
             zip_point, 
             radius
         )
 
-        nearby_trails["DistanceToTrailMiles"] = distance_to_trails(nearby_trails, zip_point)
-        search_completed = True
+        trails_to_display["DistanceToTrailMiles"] = distance_to_trails(
+            trails_to_display, 
+            zip_point
+        )
+
 
     except ValueError as exc:
         st.sidebar.error(str(exc))
 
-# ==================================================
-# Display functions
-# ==================================================
-def display_trails_dataframe(trails, selectable=False):
-    """Display trail data with readable Streamlit column formatting."""
-    dataframe_options = {
-        "column_order": [
-            "HikingName",
-            "County",
-            "DistanceToTrailMiles",
-            "LengthCategory",
-            "ReportedLengthMiles",
-            "TrailWidth",
-            "SurfaceTypes",
-            "TrailStatuses",
-        ],
-        "column_config": {
-            "HikingName": "Trail",
-            "County": "County",
-            "DistanceToTrailMiles": "Distance to Trail (Miles)",
-            "LengthCategory": "Length Category",
-            "ReportedLengthMiles": "Length (Miles)",
-            "TrailWidth": "Width",
-            "SurfaceTypes": "Surface",
-            "TrailStatuses": "Status",
-        },
-        "hide_index": True,
-    }
 
-    if selectable:
-        dataframe_options.update({
-            "on_select": "rerun",
-            "selection_mode": "single-row",
-            "key": f"selection_{st.session_state.search_version}",
-        })
-
-    return st.dataframe(
-        trails,
-        **dataframe_options,
-    )
-
-
-def display_species_groups(observations):
-    """Display top species within each supported taxon group."""
-    taxon_groups = split_observations_by_taxon(observations)
-
-    for group_name, group_df in taxon_groups.items():  
-        st.subheader(f"{group_name} — {len(group_df):,} observations")
-
-        if group_df.empty:
-            st.write(f"No Historical observations found for {group_name}")
-            continue
-    
-        top_species = summarize_species(group_df)
-
-        image_col, count_col, species_col, date_col = st.columns(
-            [1,1,3,2]
-        )
-        image_col.write("**Image**")
-        count_col.write("**Observations**")
-        species_col.write("**Species**")
-        date_col.write("**Most Recent**")
-
-        for _, row in top_species.iterrows():
-            image_col, count_col, species_col, date_col = st.columns(
-                [1,1,3,2]
-            )            
-            with image_col:
-                if pd.notna(row["image_url"]) and row["image_url"]:
-                    st.image(
-                        row["image_url"],
-                        width=150
-                    )
-                else:
-                    st.write("No Image")
-            with count_col:
-                st.write(row["observed_count"])
-            
-            with species_col:
-                st.write(row["common_name"])
-
-            with date_col:
-                st.write(row["most_recent"].strftime("%Y-%m-%d"))
-                
 # ==================================================
 # Main Page with Tabs
 # ==================================================
+st.title(f"{TITLE}: Upper Peninsula Trail Explorer")
 st.image(BANNER_PATH)
-st.subheader(f"{TITLE}: Upper Peninsula Trail Explorer")
 
-tab1, tab2, tab3 = st.tabs([
-    "Discover Trails",
-    "Trail Map",
-    "Trail Details",
-])
+st.subheader(f"How to use {TITLE}: ")
+
+st.write(
+    "Browse trails across Michigan’s Upper Peninsula, narrow the list by length "
+    "or trail name, and select a trail to see more details and nearby iNaturalist "
+    "observations. Looking for trails near you? Use the ZIP code search in the sidebar."
+)
 
 st.divider()
+
+col1, col2, col3, col4 = st.columns([0.75,1.5,1,2])
+
+with col1:
+    button_label = (
+        "ZIP Search in sidebar"
+        if zipcode == ""
+        else "Reset ZIP code"
+    )
+
+    st.button(
+        button_label,
+        on_click=reset_search,
+        disabled=zipcode == ""
+    )
+
+with col2:
+    length_categories = st.multiselect(
+        "Length Category",
+        options=["Short", "Medium", "Long", "Extremely Long"],
+        on_change=reset_selection
+    )
+            
+with col3:
+    surface_type = st.text_input(
+        "Surface Type",
+        placeholder="Search by surface type",
+        on_change=reset_selection
+    )
+
+with col4:
+    trail_name = st.text_input(
+        "Trail Name",
+        placeholder="Search by trail name",
+        on_change=reset_selection
+    )
+
+filtered_trails = filter_trails(
+    trails_to_display,
+    length_categories,
+    trail_name,
+    surface_type
+)
+
+st.divider()
+
+# ==================================================
+# Tabs
+# ==================================================
+tab1, tab2, tab3, tab4 = st.tabs([
+    ":hiking_boot: **Browse & Filter Trails**",
+    ":round_pushpin: **Explore Trails on Map**",
+    ":eagle: **Selected Trail Details**",
+    ":star: **Saved Favorite Trails**",
+])
 
 # ==================================================
 # Tab 1: Trails table
 # ==================================================
 with tab1:
-    st.session_state.selected_rows = None
-    if search_completed and nearby_trails.empty:
-        st.info(f"No trails found within {radius} miles.")
+    
+    if filtered_trails.empty:
+        st.info("No trails match the current filters.")
 
     else: 
-        event = display_trails_dataframe(nearby_trails, selectable=True)
+        event = display_trails_dataframe(filtered_trails, selectable=True)
 
         st.session_state.selected_rows = event.selection.rows
 
         st.divider()
-        st.subheader("Metrics")
-        st.metric(label="Total Trails", value=len(nearby_trails))
+        display_metrics(filtered_trails)
 
 # ==================================================
 # Tab 2: Map
 # ==================================================
 with tab2: 
-    trail_map = build_trail_map(nearby_trails, zipcode)
-    st_folium(trail_map, height=300)
+    trail_map = build_trail_map(filtered_trails, zipcode)
+    st_folium(trail_map, height=600, width=1000)
 
     st.divider()
-    st.subheader("Metrics")
-    st.metric(label="Total Trails", value=len(nearby_trails))
+
+    display_metrics(filtered_trails)
 
 # ==================================================
 # Tab 3: Specific Trail details
@@ -280,19 +272,69 @@ with tab2:
 with tab3:
     if st.session_state.selected_rows:
         row_idx = st.session_state.selected_rows[0]
-        selected_trail = nearby_trails.iloc[[row_idx]]
+        selected_trail = filtered_trails.iloc[[row_idx]]
 
-        st.subheader(f"Trail: {selected_trail["HikingName"].iloc[0]} in {selected_trail["County"].iloc[0]} County")
+        st.subheader(
+            f'Trail: {selected_trail["HikingName"].iloc[0]} '
+            f'in {selected_trail["County"].iloc[0]} County'
+        )
 
-        display_trails_dataframe(selected_trail, selectable=False)
-      
+        display_trails_dataframe(
+            selected_trail,
+            selectable=False
+        )
 
+        buffer = create_trail_buffer(selected_trail)
 
-        
-        st.header("iNaturalist Historical Observations Sept-Oct 2015-2025")
-        distances = distances_to_trail(selected_trail, historical_observations)
-        filtered_historical_observations = filter_observations_near_trail(selected_trail, historical_observations)
-        display_species_groups(filtered_historical_observations)
+        st.header("iNaturalist Observations")
+        st.markdown(
+            "Explore recent and historical sightings reported within two miles of the "
+            "selected trail using data from [iNaturalist](https://www.inaturalist.org/), "
+            "a community platform for recording and sharing observations of biodiversity."
+        )
+
+        recent_col, historical_col = st.columns(2)
+
+        with recent_col:
+            st.subheader(
+                "Recent Observations: Last 21 Days"
+            )
+
+            api_observations = fetch_recent_observations(buffer)
+
+            normalized_observations = normalize_recent_observations(api_observations)
+            filtered_api_observations = filter_observations_near_trail(
+                selected_trail,
+                normalized_observations
+            )
+
+            display_species_groups(
+                filtered_api_observations
+            )
+
+        with historical_col: 
+            st.subheader(
+                "Historical Observations: Sept-Oct 2015-2025"
+            )
+            
+            filtered_historical_observations = (
+                filter_observations_near_trail(
+                    selected_trail, 
+                    historical_observations
+                )
+            )
+
+            display_species_groups(
+                filtered_historical_observations
+            )
 
     else:
-        st.info("Click on a trail in tab 1 to see details.")
+        st.info(
+            "Click on a trail in tab 1 to see details."
+        )
+
+# ==================================================
+# Tab 4: Favorite Trails
+# ==================================================
+with tab4:
+    st.write("Favorites Coming Soon")

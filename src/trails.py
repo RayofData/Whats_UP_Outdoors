@@ -231,12 +231,38 @@ def add_length_category(trails):
 
     categorized["LengthCategory"] = pd.cut(
         categorized["ReportedLengthMiles"],
-        bins=[0,2,7, float("inf")],
-        labels = ["Short", "Medium", "Long"],
+        bins=[0,2,7,20, float("inf")],
+        labels = ["Short", "Medium", "Long", "Extremely Long"],
         include_lowest=True,
         right=True
     )
 
     return categorized
 
+def filter_trails(trails, length_categories, trail_name, surface_type):
+    """Filters trails by length category and partial trail-name match."""
+    filtered_trails = trails.copy()
 
+    if length_categories:
+        filtered_trails = filtered_trails[
+            filtered_trails["LengthCategory"].isin(length_categories)
+        ]
+
+    if trail_name:
+        filtered_trails = filtered_trails[
+            filtered_trails["HikingName"].str.contains(
+                trail_name,
+                case=False,
+                na=False
+            )
+        ]
+
+    if surface_type:
+        filtered_trails = filtered_trails[
+            filtered_trails["SurfaceTypes"].str.contains(
+                surface_type,
+                case=False,
+                na=False
+            )
+        ]
+    return filtered_trails
