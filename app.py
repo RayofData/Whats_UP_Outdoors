@@ -90,7 +90,7 @@ trail_name = ""
 surface_type = ""
 
 search_completed = False
-st.session_state.selected_rows = None
+
 
 def reset_selection():
     """Clear the selected trail when search criteria change."""
@@ -102,6 +102,7 @@ def reset_selection():
 def reset_search():
     """Resets zip to reset table"""
     st.session_state.zipcode = ""
+    reset_selection()
 
 
 # ==================================================
@@ -252,7 +253,28 @@ def display_species_groups(observations):
 
             with date_col:
                 st.write(row["most_recent"].strftime("%Y-%m-%d"))
-                
+
+def display_metrics(trails):
+    st.subheader("Metrics")
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+    with col1:
+        st.metric(label="Total Trails", value=len(filtered_trails))    
+    
+    with col2:
+        st.metric(label="Short Trails", value=len(filtered_trails[filtered_trails["LengthCategory"]=="Short"]))  
+
+    with col3:
+        st.metric(label="Medium Trails", value=len(filtered_trails[filtered_trails["LengthCategory"]=="Medium"])) 
+
+    with col4:
+        st.metric(label="Long Trails", value=len(filtered_trails[filtered_trails["LengthCategory"]=="Long"])) 
+
+    with col5:
+        st.metric(label="Extremely Long Trails", value=len(filtered_trails[filtered_trails["LengthCategory"]=="Extremely Long"]))   
+
+    with col6:
+        st.metric(label="Total Miles", value=filtered_trails["ReportedLengthMiles"].sum().round(2))
 # ==================================================
 # Main Page with Tabs
 # ==================================================
@@ -287,19 +309,22 @@ with col1:
 with col2:
     length_categories = st.multiselect(
         "Length Category",
-        options=["Short", "Medium", "Long", "Extremely Long"]
+        options=["Short", "Medium", "Long", "Extremely Long"],
+        on_change=reset_selection
     )
             
 with col3:
     surface_type = st.text_input(
         "Surface Type",
-        placeholder="Search by surface type"
+        placeholder="Search by surface type",
+        on_change=reset_selection
     )
 
 with col4:
     trail_name = st.text_input(
         "Trail Name",
-        placeholder="Search by trail name"
+        placeholder="Search by trail name",
+        on_change=reset_selection
     )
 
 filtered_trails = filter_trails(
@@ -334,8 +359,7 @@ with tab1:
         st.session_state.selected_rows = event.selection.rows
 
         st.divider()
-        st.subheader("Metrics")
-        st.metric(label="Total Trails", value=len(filtered_trails))
+        display_metrics(filtered_trails)
 
 # ==================================================
 # Tab 2: Map
@@ -345,8 +369,8 @@ with tab2:
     st_folium(trail_map, height=600, width=1000)
 
     st.divider()
-    st.subheader("Metrics")
-    st.metric(label="Total Trails", value=len(filtered_trails))
+
+    display_metrics(filtered_trails)
 
 # ==================================================
 # Tab 3: Specific Trail details
