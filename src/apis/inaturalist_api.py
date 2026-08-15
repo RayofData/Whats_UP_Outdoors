@@ -16,7 +16,7 @@ DAYS = 21
 
 HEADERS = {"User-Agent": "Whats-UP-Outdoors/0.2"}
 
-def fetch_recent_observations(bounds, iconic_taxa, timeout = 60):
+def fetch_recent_observations(bounds, timeout = 60):
     """Fetch iNaturalist observations nearby a selected trail."""
     end_date = date.today()
     start_date = end_date - timedelta(days= DAYS - 1)
@@ -34,7 +34,7 @@ def fetch_recent_observations(bounds, iconic_taxa, timeout = 60):
         "d2": end_date.isoformat(),
         "verifiable": "true",
         "mappable": "true",
-        "iconic_taxa": ",".join(iconic_taxa),
+        "iconic_taxa": ",".join(TAXON_GROUPS.values()),
         "per_page": PER_PAGE,
         "order_by": "observed_on",
         "order": "desc"
@@ -60,8 +60,8 @@ def fetch_recent_observations(bounds, iconic_taxa, timeout = 60):
                 "Unexpected response from iNaturalist API"
             )
 
-        page_results = data.get["results"]
-        total_results = data.get["total_results"]
+        page_results = data.get("results")
+        total_results = data.get("total_results")
 
         if not isinstance(page_results, list):
             raise ValueError(

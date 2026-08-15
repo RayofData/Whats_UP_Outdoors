@@ -77,7 +77,7 @@ def display_species_groups(observations):
             [1,1,3,2]
         )
         image_col.write("**Image**")
-        count_col.write("**Observations**")
+        count_col.write("**Count**")
         species_col.write("**Species**")
         date_col.write("**Most Recent**")
 
@@ -92,7 +92,7 @@ def display_species_groups(observations):
                         width=150
                     )
                 else:
-                    st.write("---------\nNo Image\n---------")
+                    st.write("**No Image**")
             with count_col:
                 st.write(str(row["observed_count"]))
             

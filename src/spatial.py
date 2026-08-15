@@ -69,7 +69,7 @@ def distances_to_trail(trail, points):
 def filter_observations_near_trail(trail, observations, buffer_miles = 2):
     """Return observations within a specified milage of a trail"""
     distances = distances_to_trail(trail, observations)
-    return observations.loc[distances <= miles].copy()
+    return observations.loc[distances <= buffer_miles].copy()
 
 
 def create_trail_buffer(trail, buffer_miles = 2):

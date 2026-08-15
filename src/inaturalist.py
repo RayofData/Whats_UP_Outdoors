@@ -1,6 +1,7 @@
 """iNaturalist observation processing, normalization, grouping, and summary utilities."""
 
 import geopandas as gpd 
+import pandas as pd
 
 
 TAXON_GROUPS = {
@@ -52,8 +53,75 @@ def normalize_observation_columns(observations):
     normalized = observations.rename(
         columns=OBSERVATION_COLUMN_RENAMES
     )
-
     return normalized[OBSERVATION_COLUMNS].copy()
+
+
+def normalize_recent_observations(observations):
+    """Flatten iNaturalist API results into the common observation schema."""
+    if not isinstance(observations, list):
+        raise ValueError("Recent iNaturalist observations must be a list.")
+
+    rows = []
+
+    for observation in observations:
+        if not isinstance(observation, dict):
+            continue
+
+        taxon = observation.get("taxon") or {}
+        geojson = observation.get("geojson") or {}
+        coordinates = geojson.get("coordinates") or []
+
+        if len(coordinates) < 2:
+            longitude = None
+            latitude = None
+        else:
+            longitude, latitude = coordinates[:2]
+
+        photos = observation.get("photos") or []
+        photo = photos[0] if photos and isinstance(photos[0], dict) else {}
+
+        rows.append({
+            "observation_id": observation.get("id"),
+            "observed_on": observation.get("observed_on"),
+            "common_name": (
+                taxon.get("preferred_common_name")
+                or observation.get("species_guess")
+                or taxon.get("name")
+            ),
+            "scientific_name": taxon.get("name"),
+            "iconic_taxon": taxon.get("iconic_taxon_name"),
+            "image_url": (
+                photo.get("url", "").replace("/square.","/medium.")
+            if photo.get("url")
+            else None
+        ),
+            "longitude": longitude,
+            "latitude": latitude,
+        })
+
+    normalized = pd.DataFrame(rows, columns=OBSERVATION_COLUMNS)
+    normalized["observed_on"] = pd.to_datetime(
+        normalized["observed_on"],
+        format="%Y-%m-%d",
+        errors="coerce"
+    )
+
+    for column in ["longitude", "latitude"]:
+        normalized[column] = pd.to_numeric(
+            normalized[column],
+            errors="coerce"
+        )
+
+    normalized = normalized.loc[
+        normalized["iconic_taxon"].isin(TAXON_GROUPS.values())
+        & normalized["scientific_name"].notna()
+        & normalized["observation_id"].notna()
+        & normalized["observed_on"].notna()
+        & normalized["longitude"].between(-180, 180)
+        & normalized["latitude"].between(-90, 90)
+    ].drop_duplicates(subset="observation_id")
+
+    return convert_to_geodataframe(normalized)
 
 
 def convert_to_geodataframe(observations):

@@ -19,7 +19,8 @@ from src.locations import (
 from src.spatial import (
     find_nearby_trails, 
     distance_to_trails,
-    distances_to_trail
+    distances_to_trail,
+    create_trail_buffer
 )
 from src.spatial import (
     filter_observations_near_trail
@@ -31,7 +32,11 @@ from src.inaturalist import (
     OBSERVATION_DISPLAY_COLUMNS,
     convert_to_geodataframe,
     split_observations_by_taxon,
-    summarize_species
+    summarize_species,
+    normalize_recent_observations
+)
+from src.apis.inaturalist_api import (
+    fetch_recent_observations
 )
 
 from src.streamlit_ui import (
@@ -166,7 +171,7 @@ if zipcode:
 # ==================================================
 # Main Page with Tabs
 # ==================================================
-st.header(f"{TITLE}: Upper Peninsula Trail Explorer")
+st.title(f"{TITLE}: Upper Peninsula Trail Explorer")
 st.image(BANNER_PATH)
 
 st.subheader(f"How to use {TITLE}: ")
@@ -278,21 +283,50 @@ with tab3:
             selected_trail,
             selectable=False
         )
-           
-        st.header(
-            "iNaturalist Historical Observations Sept-Oct 2015-2025"
-        )
-        
-        filtered_historical_observations = (
-            filter_observations_near_trail(
-                selected_trail, 
-                historical_observations
-            )
+
+        buffer = create_trail_buffer(selected_trail)
+
+        st.header("iNaturalist Observations")
+        st.markdown(
+            "Explore recent and historical sightings reported within two miles of the "
+            "selected trail using data from [iNaturalist](https://www.inaturalist.org/), "
+            "a community platform for recording and sharing observations of biodiversity."
         )
 
-        display_species_groups(
-            filtered_historical_observations
-        )
+        recent_col, historical_col = st.columns(2)
+
+        with recent_col:
+            st.subheader(
+                "Recent Observations: Last 21 Days"
+            )
+
+            api_observations = fetch_recent_observations(buffer)
+
+            normalized_observations = normalize_recent_observations(api_observations)
+            filtered_api_observations = filter_observations_near_trail(
+                selected_trail,
+                normalized_observations
+            )
+
+            display_species_groups(
+                filtered_api_observations
+            )
+
+        with historical_col: 
+            st.subheader(
+                "Historical Observations: Sept-Oct 2015-2025"
+            )
+            
+            filtered_historical_observations = (
+                filter_observations_near_trail(
+                    selected_trail, 
+                    historical_observations
+                )
+            )
+
+            display_species_groups(
+                filtered_historical_observations
+            )
 
     else:
         st.info(
