@@ -66,7 +66,22 @@ def distances_to_trail(trail, points):
     )
 
 
-def filter_observations_near_trail(trail, observations, miles = 2):
+def filter_observations_near_trail(trail, observations, buffer_miles = 2):
     """Return observations within a specified milage of a trail"""
     distances = distances_to_trail(trail, observations)
     return observations.loc[distances <= miles].copy()
+
+
+def create_trail_buffer(trail, buffer_miles = 2):
+    """Create buffer zone around trail for observation filter"""
+
+    projected = trail.to_crs(MICHIGAN_GEOREF)
+    buffer_meters = buffer_miles * METERS_PER_MILE
+
+    trail_buffer = gpd.GeoDataFrame(
+        projected[["TrailGroupName"]].copy(),
+        geometry=projected.geometry.buffer(buffer_meters),
+        crs=MICHIGAN_GEOREF
+    )
+
+    return trail_buffer
