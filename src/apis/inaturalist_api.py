@@ -12,14 +12,14 @@ from src.inaturalist import (
 API_URL = "https://api.inaturalist.org/v1/observations"
 MAX_PAGES = 5
 PER_PAGE = 200
-DAYS = 21
+DAYS_RETREIVED = 21
 
 HEADERS = {"User-Agent": "Whats-UP-Outdoors/0.2"}
 
 def fetch_recent_observations(bounds, timeout = 60):
     """Fetch iNaturalist observations nearby a selected trail."""
     end_date = date.today()
-    start_date = end_date - timedelta(days= DAYS - 1)
+    start_date = end_date - timedelta(days= DAYS_RETREIVED - 1)
 
     west, south, east, north = (
         bounds.to_crs("EPSG:4326").total_bounds
