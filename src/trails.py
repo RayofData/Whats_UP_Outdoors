@@ -239,7 +239,7 @@ def add_length_category(trails):
 
     return categorized
 
-def filter_trails(trails, length_categories, trail_name):
+def filter_trails(trails, length_categories, trail_name, surface_type):
     """Filters trails by length category and partial trail-name match."""
     filtered_trails = trails.copy()
 
@@ -252,6 +252,15 @@ def filter_trails(trails, length_categories, trail_name):
         filtered_trails = filtered_trails[
             filtered_trails["HikingName"].str.contains(
                 trail_name,
+                case=False,
+                na=False
+            )
+        ]
+
+    if surface_type:
+        filtered_trails = filtered_trails[
+            filtered_trails["SurfaceTypes"].str.contains(
+                surface_type,
                 case=False,
                 na=False
             )

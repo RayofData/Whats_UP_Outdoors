@@ -21,11 +21,11 @@ def build_trail_map(trails, zipcode = ""):
             zip_point.x
         ]
 
-        zoom_start = 8
+        zoom_start = 9
 
     else: 
         map_center = UP_CENTER
-        zoom_start = 6
+        zoom_start = 7
 
     map_trails["Miles"] = map_trails["ReportedLengthMiles"].round(2)
 
