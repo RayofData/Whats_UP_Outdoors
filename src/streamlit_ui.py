@@ -1,0 +1,143 @@
+"""Streamlit UI helpers for application state, trail tables, metrics, and species displays."""
+
+import pandas as pd
+import streamlit as st
+
+from src.inaturalist import (
+    split_observations_by_taxon,
+    summarize_species,
+)
+
+def reset_selection():
+    """Clear the selected trail when search criteria change."""
+    st.session_state.selected_rows = []
+    st.session_state.selected_trail = None
+    st.session_state.search_version += 1
+
+
+def reset_search():
+    """Resets zip to reset table"""
+    st.session_state.zipcode = ""
+    reset_selection() 
+    
+     
+def display_trails_dataframe(trails, selectable=False):
+    """Display trail data with readable Streamlit column formatting."""
+    dataframe_options = {
+        "column_order": [
+            "HikingName",
+            "County",
+            "DistanceToTrailMiles",
+            "LengthCategory",
+            "ReportedLengthMiles",
+            "TrailWidth",
+            "SurfaceTypes",
+            "TrailStatuses",
+        ],
+        "column_config": {
+            "HikingName": "Trail",
+            "County": "County",
+            "DistanceToTrailMiles": "Distance to Trail (Miles)",
+            "LengthCategory": "Length Category",
+            "ReportedLengthMiles": "Length (Miles)",
+            "TrailWidth": "Width",
+            "SurfaceTypes": "Surface",
+            "TrailStatuses": "Status",
+        },
+        "hide_index": True,
+    }
+
+    if selectable:
+        dataframe_options.update({
+            "on_select": "rerun",
+            "selection_mode": "single-row",
+            "key": f"selection_{st.session_state.search_version}",
+        })
+
+    return st.dataframe(
+        trails,
+        **dataframe_options,
+    )
+
+
+def display_species_groups(observations):
+    """Display top species within each supported taxon group."""
+    taxon_groups = split_observations_by_taxon(observations)
+
+    for group_name, group_df in taxon_groups.items():  
+        st.subheader(f"{group_name} — {len(group_df):,} observations")
+
+        if group_df.empty:
+            st.write(f"No Historical observations found for {group_name}")
+            continue
+    
+        top_species = summarize_species(group_df)
+
+        image_col, count_col, species_col, date_col = st.columns(
+            [1,1,3,2]
+        )
+        image_col.write("**Image**")
+        count_col.write("**Observations**")
+        species_col.write("**Species**")
+        date_col.write("**Most Recent**")
+
+        for _, row in top_species.iterrows():
+            image_col, count_col, species_col, date_col = st.columns(
+                [1,1,3,2]
+            )            
+            with image_col:
+                if pd.notna(row["image_url"]) and row["image_url"]:
+                    st.image(
+                        row["image_url"],
+                        width=150
+                    )
+                else:
+                    st.write("---------\nNo Image\n---------")
+            with count_col:
+                st.write(str(row["observed_count"]))
+            
+            with species_col:
+                st.write(row["common_name"])
+
+            with date_col:
+                st.write(row["most_recent"].strftime("%Y-%m-%d"))
+
+def display_metrics(trails):
+    """Display summary metrics for the currently displayed trails."""
+    st.subheader("Metrics")
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+    with col1:
+        st.metric(
+            label="Total Trails", 
+            value=len(trails)
+        )    
+    
+    with col2:
+        st.metric(
+            label="Short Trails", 
+            value=len(trails[trails["LengthCategory"]=="Short"])
+        )  
+
+    with col3:
+        st.metric(
+            label="Medium Trails", 
+            value=len(trails[trails["LengthCategory"]=="Medium"])
+        ) 
+
+    with col4:
+        st.metric(
+            label="Long Trails", 
+            value=len(trails[trails["LengthCategory"]=="Long"])
+        ) 
+
+    with col5:
+        st.metric(
+            label="Extremely Long Trails", 
+            value=len(trails[trails["LengthCategory"]=="Extremely Long"])
+        )   
+
+    with col6:
+        st.metric(
+            label="Total Miles", 
+            value=trails["ReportedLengthMiles"].sum().round(2))
