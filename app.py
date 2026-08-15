@@ -89,8 +89,6 @@ length_categories = []
 trail_name = ""
 surface_type = ""
 
-search_completed = False
-
 
 def reset_selection():
     """Clear the selected trail when search criteria change."""
@@ -102,8 +100,7 @@ def reset_selection():
 def reset_search():
     """Resets zip to reset table"""
     st.session_state.zipcode = ""
-    reset_selection()
-
+    reset_selection() 
 
 # ==================================================
 # Side Bar
@@ -165,7 +162,6 @@ if zipcode:
             zip_point
         )
 
-        search_completed = True
 
     except ValueError as exc:
         st.sidebar.error(str(exc))
@@ -275,6 +271,7 @@ def display_metrics(trails):
 
     with col6:
         st.metric(label="Total Miles", value=filtered_trails["ReportedLengthMiles"].sum().round(2))
+
 # ==================================================
 # Main Page with Tabs
 # ==================================================
@@ -334,24 +331,25 @@ filtered_trails = filter_trails(
     surface_type
 )
 
-
-
-tab1, tab2, tab3, tab4 = st.tabs([
-    "Discover Trails",
-    "Trail Map",
-    "Trail Details",
-    "Favorite Trails"
-])
-
 st.divider()
+
+# ==================================================
+# Tabs
+# ==================================================
+tab1, tab2, tab3, tab4 = st.tabs([
+    ":hiking_boot: **Browse & Filter Trails**",
+    ":round_pushpin: **Explore Trails on Map**",
+    ":eagle: **Selected Trail Details**",
+    ":star: **Saved Favorite Trails**",
+])
 
 # ==================================================
 # Tab 1: Trails table
 # ==================================================
 with tab1:
     
-    if search_completed and filtered_trails.empty:
-        st.info(f"No trails found within search.")
+    if filtered_trails.empty:
+        st.info("No trails match the current filters.")
 
     else: 
         event = display_trails_dataframe(filtered_trails, selectable=True)
