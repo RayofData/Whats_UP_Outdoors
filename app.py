@@ -7,6 +7,10 @@ import geopandas as gpd
 import pandas as pd
 from streamlit_folium import st_folium
 
+from src.trails import (
+    filter_trails
+)
+
 from src.locations import (
     normalize_zipcode, 
     zip_to_point,
@@ -117,11 +121,6 @@ radius = st.sidebar.radio(
     on_change=reset_selection
 )
 
-st.sidebar.button("Reset to all trails.", on_click=reset_search)
-
-nearby_trails = trails.copy()
-search_completed = False
-
 if zipcode: 
     try:
         zip_info = get_zip_info(zipcode)
@@ -150,7 +149,7 @@ if zipcode:
 
 # ==================================================
 # Display functions
-# ==================================================
+# ==================================================    
 def display_trails_dataframe(trails, selectable=False):
     """Display trail data with readable Streamlit column formatting."""
     dataframe_options = {
@@ -238,6 +237,37 @@ def display_species_groups(observations):
 st.image(BANNER_PATH)
 st.subheader(f"{TITLE}: Upper Peninsula Trail Explorer")
 
+
+
+col1, col2, col3 = st.columns([1,1,2])
+
+with col1:
+    st.button(
+        "Reset ZIP code.", 
+        on_click=reset_search
+    )
+with col2:
+    length_categories = st.multiselect(
+        "Length Category",
+        options=["Short", "Medium", "Long", "Extremely Long"]
+    )
+            
+
+with col3:
+    trail_name = st.text_input(
+        "Trail Name",
+        placeholder="Search by trail name"
+    )
+
+nearby_trails = filter_trails(
+    trails,
+    length_categories,
+    trail_name
+)
+search_completed = False
+st.session_state.selected_rows = None
+
+
 tab1, tab2, tab3, tab4 = st.tabs([
     "Discover Trails",
     "Trail Map",
@@ -251,7 +281,7 @@ st.divider()
 # Tab 1: Trails table
 # ==================================================
 with tab1:
-    st.session_state.selected_rows = None
+    
     if search_completed and nearby_trails.empty:
         st.info(f"No trails found within {radius} miles.")
 
