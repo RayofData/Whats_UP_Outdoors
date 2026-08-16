@@ -10,8 +10,7 @@ from src.inaturalist import (
 
 def reset_selection():
     """Clear the selected trail when search criteria change."""
-    st.session_state.selected_rows = []
-    st.session_state.selected_trail = None
+    st.session_state.selected_trail_id = None
     st.session_state.search_version += 1
 
 

@@ -89,14 +89,14 @@ historical_observations = convert_to_geodataframe(historical_observations)
 # ==================================================
 # Session States
 # ==================================================
-if "selected_rows" not in st.session_state:
-    st.session_state.selected_rows = []
-
-if "selected_trail" not in st.session_state:
-    st.session_state.selected_trail = None
+if "selected_trail_id" not in st.session_state:
+    st.session_state.selected_trail_id = None
 
 if "search_version" not in st.session_state:
     st.session_state.search_version = 0
+
+if "favorites" not in st.session_state:
+    st.session_state.favorites = []
 
 length_categories = []
 trail_name = ""
@@ -250,10 +250,28 @@ with tab1:
     else: 
         event = display_trails_dataframe(filtered_trails, selectable=True)
 
-        st.session_state.selected_rows = event.selection.rows
+        if event.selection.rows:
+            row_idx = event.selection.rows[0]
+            
+            st.session_state.selected_trail_id = (
+                filtered_trails.iloc[row_idx]["TrailGroupName"]
+            )
+
 
         st.divider()
         display_metrics(filtered_trails)
+
+# ==================================================
+# Resolve selected trail
+# ==================================================
+selected_trail = None
+if st.session_state.selected_trail_id is not None:
+    matches = trails.loc[
+        trails["TrailGroupName"]
+        == st.session_state.selected_trail_id
+    ]
+    selected_trail = matches.iloc[[0]]
+    
 
 # ==================================================
 # Tab 2: Map
@@ -270,10 +288,7 @@ with tab2:
 # Tab 3: Specific Trail details
 # ==================================================
 with tab3:
-    if st.session_state.selected_rows:
-        row_idx = st.session_state.selected_rows[0]
-        selected_trail = filtered_trails.iloc[[row_idx]]
-
+    if selected_trail is not None:
         st.subheader(
             f'Trail: {selected_trail["HikingName"].iloc[0]} '
             f'in {selected_trail["County"].iloc[0]} County'
@@ -300,17 +315,21 @@ with tab3:
                 "Recent Observations: Last 21 Days"
             )
 
-            api_observations = fetch_recent_observations(buffer)
+            try: 
+                api_observations = fetch_recent_observations(buffer)
+                
+                normalized_observations = normalize_recent_observations(api_observations)
 
-            normalized_observations = normalize_recent_observations(api_observations)
-            filtered_api_observations = filter_observations_near_trail(
-                selected_trail,
-                normalized_observations
-            )
+                filtered_api_observations = filter_observations_near_trail(
+                    selected_trail,
+                    normalized_observations
+                )
 
-            display_species_groups(
-                filtered_api_observations
-            )
+                display_species_groups(
+                    filtered_api_observations
+                )
+            except requests.RequestException:
+                st.warning("Recent observations unavailable.")
 
         with historical_col: 
             st.subheader(

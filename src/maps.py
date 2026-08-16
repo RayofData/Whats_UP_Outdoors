@@ -13,19 +13,21 @@ def build_trail_map(trails, zipcode = ""):
     """Build an interactive map of Upper Peninsula trails."""
     map_trails = trails.to_crs(epsg=4326).copy()
 
+    map_center = UP_CENTER
+    zoom_start = 7
+    zip_point = None
+
     if zipcode:
-        zip_point = zip_to_point(zipcode)
-
-        map_center = [
-            zip_point.y,
-            zip_point.x
-        ]
-
-        zoom_start = 9
-
-    else: 
-        map_center = UP_CENTER
-        zoom_start = 7
+        try: 
+            zip_point = zip_to_point(zipcode)
+        except ValueError:
+            pass
+        else:
+            map_center = [
+                zip_point.y,
+                zip_point.x
+            ]
+            zoom_start = 9
 
     map_trails["Miles"] = map_trails["ReportedLengthMiles"].round(2)
 
@@ -61,9 +63,9 @@ def build_trail_map(trails, zipcode = ""):
             ]
         }
     )
-    if zipcode:
+    if zip_point is not None:
         folium.Marker(
-            location=map_center,
+            location=[zip_point.y, zip_point.x],
             tooltip=f"ZIP: {zipcode}"
         ).add_to(trail_map)
 

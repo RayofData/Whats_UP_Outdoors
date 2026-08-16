@@ -135,7 +135,8 @@ Repeated trail names in different counties remain separate trails.
 - **Length category:**  
   - Short: ≤ 2 miles  
   - Medium: > 2 and ≤ 7 miles  
-  - Long: > 7 miles
+  - Long: > 7 miles ≤ 20 miles
+  - Extremely long: > 20 miles
 - **Width:** one value if all valid segments agree, `Varies` if they differ, `Unknown` if none are valid.
 - **Surface:** one value if all valid segments agree; otherwise comma-separated unique values; `Unknown` if none are valid.
 - **Status:** preserve DNR values; use one value if all valid segments agree; otherwise comma-separated unique values; `Unknown` if none are valid.
