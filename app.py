@@ -3,9 +3,11 @@
 from pathlib import Path
 
 import streamlit as st
+from streamlit_folium import st_folium
 import geopandas as gpd 
 import pandas as pd
-from streamlit_folium import st_folium
+import requests
+
 
 from src.trails import (
     filter_trails
@@ -81,22 +83,27 @@ trails = load_trails()
 
 @st.cache_data
 def load_historical_observations():
-    return pd.read_parquet(PROCESSED_PATH_OBS)
+    observations = pd.read_parquet(PROCESSED_PATH_OBS)
+    
+    return convert_to_geodataframe(observations)
 
 historical_observations = load_historical_observations()
-historical_observations = convert_to_geodataframe(historical_observations)
 
 # ==================================================
 # Session States
 # ==================================================
-if "selected_rows" not in st.session_state:
-    st.session_state.selected_rows = []
-
-if "selected_trail" not in st.session_state:
-    st.session_state.selected_trail = None
+if "selected_trail_id" not in st.session_state:
+    st.session_state.selected_trail_id = None
 
 if "search_version" not in st.session_state:
     st.session_state.search_version = 0
+
+if "recent_observations" not in st.session_state:
+    st.session_state.recent_observations = {}
+
+if "favorites" not in st.session_state:
+    st.session_state.favorites = []
+
 
 length_categories = []
 trail_name = ""
@@ -136,6 +143,7 @@ radius = st.sidebar.radio(
 )
 
 trails_to_display = trails.copy()
+zip_point = None
 
 if zipcode: 
     try:
@@ -184,9 +192,9 @@ st.write(
 
 st.divider()
 
-col1, col2, col3, col4 = st.columns([0.75,1.5,1,2])
+zip_col, len_col, surface_col, name_col = st.columns([0.75,1.5,1,2])
 
-with col1:
+with zip_col:
     button_label = (
         "ZIP Search in sidebar"
         if zipcode == ""
@@ -199,21 +207,21 @@ with col1:
         disabled=zipcode == ""
     )
 
-with col2:
+with len_col:
     length_categories = st.multiselect(
         "Length Category",
         options=["Short", "Medium", "Long", "Extremely Long"],
         on_change=reset_selection
     )
             
-with col3:
+with surface_col:
     surface_type = st.text_input(
         "Surface Type",
         placeholder="Search by surface type",
         on_change=reset_selection
     )
 
-with col4:
+with name_col:
     trail_name = st.text_input(
         "Trail Name",
         placeholder="Search by trail name",
@@ -248,18 +256,47 @@ with tab1:
         st.info("No trails match the current filters.")
 
     else: 
-        event = display_trails_dataframe(filtered_trails, selectable=True)
+        event = display_trails_dataframe(
+            filtered_trails, 
+            selectable=True
+        )
 
-        st.session_state.selected_rows = event.selection.rows
+        if event.selection.rows:
+            row_idx = event.selection.rows[0]
+            
+            st.session_state.selected_trail_id = (
+                filtered_trails.iloc[row_idx]["TrailGroupName"]
+            )
 
         st.divider()
         display_metrics(filtered_trails)
 
 # ==================================================
+# Resolve selected trail
+# ==================================================
+selected_trail = None
+
+if st.session_state.selected_trail_id is not None:
+    matches = trails.loc[
+        trails["TrailGroupName"]
+        == st.session_state.selected_trail_id
+    ]
+    
+    if len(matches) == 1:
+        selected_trail = matches.iloc[[0]]
+    else: 
+        st.session_state.selected_trail_id = None
+    
+
+# ==================================================
 # Tab 2: Map
 # ==================================================
 with tab2: 
-    trail_map = build_trail_map(filtered_trails, zipcode)
+    trail_map = build_trail_map(
+        filtered_trails,
+        zip_point
+    )
+
     st_folium(trail_map, height=600, width=1000)
 
     st.divider()
@@ -270,9 +307,7 @@ with tab2:
 # Tab 3: Specific Trail details
 # ==================================================
 with tab3:
-    if st.session_state.selected_rows:
-        row_idx = st.session_state.selected_rows[0]
-        selected_trail = filtered_trails.iloc[[row_idx]]
+    if selected_trail is not None:
 
         st.subheader(
             f'Trail: {selected_trail["HikingName"].iloc[0]} '
@@ -287,6 +322,7 @@ with tab3:
         buffer = create_trail_buffer(selected_trail)
 
         st.header("iNaturalist Observations")
+
         st.markdown(
             "Explore recent and historical sightings reported within two miles of the "
             "selected trail using data from [iNaturalist](https://www.inaturalist.org/), "
@@ -300,17 +336,30 @@ with tab3:
                 "Recent Observations: Last 21 Days"
             )
 
-            api_observations = fetch_recent_observations(buffer)
+            try: 
+                trail_id = st.session_state.selected_trail_id
 
-            normalized_observations = normalize_recent_observations(api_observations)
-            filtered_api_observations = filter_observations_near_trail(
-                selected_trail,
-                normalized_observations
-            )
+                if trail_id not in st.session_state.recent_observations:
 
-            display_species_groups(
-                filtered_api_observations
-            )
+                    api_observations = fetch_recent_observations(buffer)
+                    
+                    normalized_observations = normalize_recent_observations(api_observations)
+
+                    filtered_api_observations = filter_observations_near_trail(
+                        selected_trail,
+                        normalized_observations
+                    )
+
+                    st.session_state.recent_observations[
+                        trail_id
+                    ] = filtered_api_observations
+
+                filtered_api_observations = st.session_state.recent_observations[trail_id]
+                display_species_groups(
+                    filtered_api_observations
+                )
+            except requests.RequestException:
+                st.warning("Recent observations unavailable.")
 
         with historical_col: 
             st.subheader(
