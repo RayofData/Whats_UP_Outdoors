@@ -56,7 +56,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 PROCESSED_PATH_TRAILS = PROCESSED_DIR / "dnr_up_hiking_trails_grouped.parquet"
-PROCESSED_PATH_OBS = PROCESSED_DIR / "inaturalist_up_fall_observations.parquet"
+PROCESSED_PATH_OBS = PROCESSED_DIR / "inaturalist_historical_up_fall_observations.parquet"
 
 STATIC_DIR = PROJECT_ROOT / "static"
 MAP_IMAGE_PATH = STATIC_DIR / "map_up.jpg"
@@ -335,7 +335,7 @@ with tab3:
             st.subheader(
                 "Recent Observations: Last 21 Days"
             )
-
+            api_warning = "Recent observations unavailable."
             try: 
                 trail_id = st.session_state.selected_trail_id
 
@@ -358,8 +358,16 @@ with tab3:
                 display_species_groups(
                     filtered_api_observations
                 )
-            except requests.RequestException:
-                st.warning("Recent observations unavailable.")
+
+            except requests.exceptions.RequestException:
+                st.warning(api_warning)
+            except requests.exceptions.HTTPError: 
+                st.warning(api_warning)
+            except requests.exceptions.ConnectionError:
+                st.warning(api_warning)
+            except requests.ReadTimeout:
+                st.warning(api_warning)
+            
 
         with historical_col: 
             st.subheader(

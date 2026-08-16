@@ -19,14 +19,14 @@ RAW_PATH = (
     PROJECT_ROOT 
     / "data" 
     / "raw" 
-    / "inaturalist_up_fall_observations_2015_2025.csv"
+    / "inaturalist_historical_up_fall_observations_2015_2025.csv"
 )
 
 PROCESSED_PATH = (
     PROJECT_ROOT 
     / "data" 
     / "processed" 
-    / "inaturalist_up_fall_observations.parquet"
+    / "inaturalist_historical_up_fall_observations.parquet"
 )
 
 

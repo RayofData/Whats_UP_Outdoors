@@ -30,11 +30,12 @@ The MVP emphasizes reproducible geospatial processing, API integration, automate
 
 ## Application Layout
 
-The Streamlit app uses three main tabs:
+The Streamlit app uses four main tabs:
 
 1. **Trails** — displays all trails before a ZIP search and up to 20 nearby trails after a search.
 2. **Map** — displays the corresponding trail set on an interactive Folium map.
 3. **Trail Details** — allows selection of any Upper Peninsula trail and displays trail attributes, nearby iNaturalist observations, species summaries, and favorite controls.
+4. **Favorite Trails** — displays favorite trails, include a map, and option to save as csv.
 
 ## Architecture
 
@@ -65,6 +66,7 @@ src/
 ├── locations.py
 ├── spatial.py
 ├── inaturalist.py
+├── streamlit_ui.py
 └── maps.py
 ```
 
@@ -91,7 +93,7 @@ Whats_UP_Outdoors/
 │   ├── raw/
 │   └── processed/
 │       ├── dnr_up_hiking_trails_grouped.parquet
-│       └── inaturalist_historical_fall_observations.parquet
+│       └── inaturalist_historical_up_fall_observations.parquet
 ├── src/
 │   ├── apis/
 │   │   ├── dnr_api.py
@@ -100,6 +102,7 @@ Whats_UP_Outdoors/
 │   ├── locations.py
 │   ├── spatial.py
 │   ├── inaturalist.py
+│   ├── streamlit_up.py
 │   └── maps.py
 └── tests/
 ```

@@ -59,8 +59,7 @@ def build_trail_map(trails, zip_point=None):
     )
     if zip_point is not None:
         folium.Marker(
-            location=[zip_point.y, zip_point.x],
-            tooltip=f"ZIP: {zipcode}"
+            location=[zip_point.y, zip_point.x]
         ).add_to(trail_map)
 
     return trail_map

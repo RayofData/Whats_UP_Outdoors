@@ -253,7 +253,8 @@ def filter_trails(trails, length_categories, trail_name, surface_type):
             filtered_trails["HikingName"].str.contains(
                 trail_name,
                 case=False,
-                na=False
+                na=False,
+                regex=False
             )
         ]
 
@@ -262,7 +263,8 @@ def filter_trails(trails, length_categories, trail_name, surface_type):
             filtered_trails["SurfaceTypes"].str.contains(
                 surface_type,
                 case=False,
-                na=False
+                na=False,
+                regex=False
             )
         ]
     return filtered_trails

@@ -24,7 +24,7 @@
 3. **`util/etl_inaturalist_history.py`**  
    One-time reproducibility script for converting the manually downloaded historical iNaturalist CSV into:
 
-   `data/processed/inaturalist_historical_fall_observations.parquet`
+   `data/processed/inaturalist_historical_up_fall_observations.parquet`
 
    The raw CSV remains local and Git-ignored. The processed historical Parquet is committed to the repository.
 
@@ -39,6 +39,7 @@ src/
 ├── locations.py
 ├── spatial.py
 ├── inaturalist.py
+├── streamlit_ui.py
 └── maps.py
 ```
 
@@ -50,6 +51,7 @@ Responsibilities:
 - `locations.py`: ZIP normalization, validation, `pgeocode` lookup, and user point creation.
 - `spatial.py`: CRS transformations, distance calculations, radius filtering, nearest-trail filtering, and related spatial operations.
 - `inaturalist.py`: historical Parquet loading, recent-observation normalization, taxon mapping, and species summaries.
+- `streamlit_ui.py`: visual output handling in streamlit for trails dataframe observation printing, also handles resets
 - `maps.py`: Folium map construction.
 
 `*_api.py` modules contain HTTP/service-response logic only. They must not perform application data cleaning, spatial calculations, map construction, or Streamlit rendering.
@@ -272,6 +274,21 @@ For the selected trail, display:
 - recent species summaries
 - historical species summaries
 - add/remove favorite control
+
+### Tab 4: Favorite Trails
+
+If no trails saved to favorite, display message favorites can be saved from trail details tab. 
+
+For the complete list of favorite trails, display:
+
+- single folium map with all favorite trails
+- trail name
+- county
+- status
+- `ReportedLengthMiles`
+- length category
+- surface
+- width
 
 ## 9. iNaturalist Integration
 
