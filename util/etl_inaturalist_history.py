@@ -26,7 +26,7 @@ PROCESSED_PATH = (
     PROJECT_ROOT 
     / "data" 
     / "processed" 
-    / "inaturalist_up_fall_observations.parquet"
+    / "inaturalist_historical_up_fall_observations.parquet"
 )
 
 

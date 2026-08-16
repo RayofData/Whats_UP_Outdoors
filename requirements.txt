@@ -1,5 +1,7 @@
 folium
 geopandas
+mapclassify
+matplotlib
 pandas
 pgeocode
 pyarrow
