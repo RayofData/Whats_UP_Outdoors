@@ -114,7 +114,7 @@ What’s UP Outdoors is intended to be deployed with Streamlit Community Cloud.
 
 Once deployed, the application can be opened directly in a web browser without cloning the repository, installing Python, or preparing the source datasets locally.
 
-Live application: *Streamlit deployment link will be added here.*
+Live application: *Streamlit deployment link [here](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/).*
 
 The processed DNR trail and historical iNaturalist datasets required by the application are bundled with the repository for the deployed demo.
 
