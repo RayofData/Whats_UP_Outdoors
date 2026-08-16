@@ -12,8 +12,8 @@ from src.inaturalist import (
 )
 
 UP_CENTER = [46.5, -87.5]
-RECENT_COLOR = "#F28C28"
-HISTORICAL_COLOR = "#4682B4"
+RECENT_COLOR = "orange"
+HISTORICAL_COLOR = "cadetblue"
 
 TAXON_ICONS = {
     "Aves": "crow",
@@ -28,6 +28,7 @@ TAXON_LABEL = {
     taxon_name: display_name
     for display_name, taxon_name in TAXON_GROUPS.items()
 }
+
 
 def build_trail_map(trails, zip_point=None):
     """Build an interactive map of Upper Peninsula trails."""
@@ -91,6 +92,22 @@ def build_observation_map(selected_trail, recent_observations, historical_observ
     map_recent = recent_observations.to_crs(epsg=4326).copy()
     map_history = historical_observations.to_crs(epsg=4326).copy()
 
+    taxon_totals = (
+        map_recent["iconic_taxon"]
+        .value_counts()
+        .add(
+            map_history["iconic_taxon"].value_counts(),
+            fill_value=0
+        )
+        .astype(int)
+        .to_dict()
+    )
+
+    observation_groups = [
+        (map_recent, RECENT_COLOR),
+        (map_history, HISTORICAL_COLOR)
+    ]
+
     west, south, east, north = map_trail.total_bounds
 
     observation_map = folium.Map(
@@ -102,35 +119,41 @@ def build_observation_map(selected_trail, recent_observations, historical_observ
         map_trail
     ).add_to(observation_map)
 
-    for _, observation in map_recent.iterrows():
-        folium.Marker(
-            location=[
-                observation.geometry.y,
-                observation.geometry.x 
-            ],
-            icon = folium.Icon(
-                color="orange",
-                icon=TAXON_ICONS.get(
-                    observation["iconic_taxon"],
-                    "circle"
-                ),
-                prefix="fa"
-            )
-        ).add_to(observation_map)
 
-    for _, observation in map_history.iterrows():
-        folium.Marker(
-            location=[
-                observation.geometry.y,
-                observation.geometry.x 
-            ],
-            icon = folium.Icon(
-                color="cadetblue",
-                icon=TAXON_ICONS.get(
-                    observation["iconic_taxon"],
-                    "circle"
+    for observations, marker_color in observation_groups:
+        for _, observation in observations.iterrows():
+            taxon_name = observation["iconic_taxon"]
+
+            taxon_label = TAXON_LABEL.get(
+                taxon_name,
+                "Unknown"
+            )
+
+            taxon_total = taxon_totals.get(
+                taxon_name,
+                0
+            )
+
+            folium.Marker(
+                location=[
+                    observation.geometry.y,
+                    observation.geometry.x
+                ],
+                icon=folium.Icon(
+                    color=marker_color,
+                    icon=TAXON_ICONS.get(
+                        taxon_name,
+                        "circle"
+                    ),
+                    prefix="fa"
                 ),
-                prefix="fa"
+                tooltip=(
+                    f"{observation["common_name"]}"
+                ),
+            popup=(
+                f'{observation["common_name"]} | '
+                f'{observation["observed_on"].date()} | '
+                f'Total {taxon_label}: {taxon_total}'
             )
         ).add_to(observation_map)
 
