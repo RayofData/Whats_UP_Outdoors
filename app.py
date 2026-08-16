@@ -184,9 +184,9 @@ st.write(
 
 st.divider()
 
-col1, col2, col3, col4 = st.columns([0.75,1.5,1,2])
+zip_col, len_col, surface_col, name_col = st.columns([0.75,1.5,1,2])
 
-with col1:
+with zip_col:
     button_label = (
         "ZIP Search in sidebar"
         if zipcode == ""
@@ -199,21 +199,21 @@ with col1:
         disabled=zipcode == ""
     )
 
-with col2:
+with len_col:
     length_categories = st.multiselect(
         "Length Category",
         options=["Short", "Medium", "Long", "Extremely Long"],
         on_change=reset_selection
     )
             
-with col3:
+with surface_col:
     surface_type = st.text_input(
         "Surface Type",
         placeholder="Search by surface type",
         on_change=reset_selection
     )
 
-with col4:
+with name_col:
     trail_name = st.text_input(
         "Trail Name",
         placeholder="Search by trail name",

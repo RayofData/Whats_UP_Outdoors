@@ -105,39 +105,39 @@ def display_species_groups(observations):
 def display_metrics(trails):
     """Display summary metrics for the currently displayed trails."""
     st.subheader("Metrics")
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    total_col, short_col, med_col, long_col, xlong_col, miles_col = st.columns(6)
 
-    with col1:
+    with total_col:
         st.metric(
             label="Total Trails", 
             value=len(trails)
         )    
     
-    with col2:
+    with short_col:
         st.metric(
             label="Short Trails", 
             value=len(trails[trails["LengthCategory"]=="Short"])
         )  
 
-    with col3:
+    with med_col:
         st.metric(
             label="Medium Trails", 
             value=len(trails[trails["LengthCategory"]=="Medium"])
         ) 
 
-    with col4:
+    with long_col:
         st.metric(
             label="Long Trails", 
             value=len(trails[trails["LengthCategory"]=="Long"])
         ) 
 
-    with col5:
+    with xlong_col:
         st.metric(
             label="Extremely Long Trails", 
             value=len(trails[trails["LengthCategory"]=="Extremely Long"])
         )   
 
-    with col6:
+    with miles_col:
         st.metric(
             label="Total Miles", 
             value=trails["ReportedLengthMiles"].sum().round(2))
