@@ -85,9 +85,11 @@ def build_trail_map(trails, zip_point=None):
     return trail_map
 
 
-def build_observation_map(selected_trail):
+def build_observation_map(selected_trail, recent_observations, historical_observations):
     """Build an interactive map centered on the complete selected trail."""
     map_trail = selected_trail.to_crs(epsg=4326).copy()
+    map_recent = recent_observations.to_crs(epsg=4326).copy()
+    map_history = historical_observations.to_crs(epsg=4326).copy()
 
     west, south, east, north = map_trail.total_bounds
 
@@ -99,6 +101,38 @@ def build_observation_map(selected_trail):
     folium.GeoJson(
         map_trail
     ).add_to(observation_map)
+
+    for _, observation in map_recent.iterrows():
+        folium.Marker(
+            location=[
+                observation.geometry.y,
+                observation.geometry.x 
+            ],
+            icon = folium.Icon(
+                color="orange",
+                icon=TAXON_ICONS.get(
+                    observation["iconic_taxon"],
+                    "circle"
+                ),
+                prefix="fa"
+            )
+        ).add_to(observation_map)
+
+    for _, observation in map_history.iterrows():
+        folium.Marker(
+            location=[
+                observation.geometry.y,
+                observation.geometry.x 
+            ],
+            icon = folium.Icon(
+                color="cadetblue",
+                icon=TAXON_ICONS.get(
+                    observation["iconic_taxon"],
+                    "circle"
+                ),
+                prefix="fa"
+            )
+        ).add_to(observation_map)
 
     observation_map.fit_bounds(
         [

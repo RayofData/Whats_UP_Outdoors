@@ -369,7 +369,7 @@ with tab3:
         )
 
 
-        observation_map = build_observation_map(selected_trail)
+        observation_map = build_observation_map(selected_trail, filtered_api_observations, filtered_historical_observations)
 
         st_folium(
             observation_map,

@@ -81,6 +81,7 @@ def display_species_groups(observations):
         image_col, count_col, species_col, date_col = st.columns(
             [1,1,3,2]
         )
+        
         image_col.write("**Image**")
         count_col.write("**Count**")
         species_col.write("**Species**")
