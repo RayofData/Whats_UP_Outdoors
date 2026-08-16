@@ -11,7 +11,13 @@ from src.inaturalist import (
 def reset_selection():
     """Clear the selected trail when search criteria change."""
     st.session_state.selected_trail_id = None
-    st.session_state.search_version += 1
+
+    current_version = st.session_state.get("search_version", 0)
+
+    if not isinstance(current_version, int):
+        current_version = 0
+
+    st.session_state.search_version = current_version + 1
 
 
 def reset_search():
@@ -67,7 +73,7 @@ def display_species_groups(observations):
         st.subheader(f"{group_name} — {len(group_df):,} observations")
 
         if group_df.empty:
-            st.write(f"No Historical observations found for {group_name}")
+            st.write(f"No observations found for {group_name}")
             continue
     
         top_species = summarize_species(group_df)

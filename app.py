@@ -3,9 +3,11 @@
 from pathlib import Path
 
 import streamlit as st
+from streamlit_folium import st_folium
 import geopandas as gpd 
 import pandas as pd
-from streamlit_folium import st_folium
+import requests
+
 
 from src.trails import (
     filter_trails
@@ -81,10 +83,11 @@ trails = load_trails()
 
 @st.cache_data
 def load_historical_observations():
-    return pd.read_parquet(PROCESSED_PATH_OBS)
+    observations = pd.read_parquet(PROCESSED_PATH_OBS)
+    
+    return convert_to_geodataframe(observations)
 
 historical_observations = load_historical_observations()
-historical_observations = convert_to_geodataframe(historical_observations)
 
 # ==================================================
 # Session States
@@ -95,8 +98,12 @@ if "selected_trail_id" not in st.session_state:
 if "search_version" not in st.session_state:
     st.session_state.search_version = 0
 
+if "recent_observations" not in st.session_state:
+    st.session_state.recent_observations = {}
+
 if "favorites" not in st.session_state:
     st.session_state.favorites = []
+
 
 length_categories = []
 trail_name = ""
@@ -136,6 +143,7 @@ radius = st.sidebar.radio(
 )
 
 trails_to_display = trails.copy()
+zip_point = None
 
 if zipcode: 
     try:
@@ -248,7 +256,10 @@ with tab1:
         st.info("No trails match the current filters.")
 
     else: 
-        event = display_trails_dataframe(filtered_trails, selectable=True)
+        event = display_trails_dataframe(
+            filtered_trails, 
+            selectable=True
+        )
 
         if event.selection.rows:
             row_idx = event.selection.rows[0]
@@ -257,7 +268,6 @@ with tab1:
                 filtered_trails.iloc[row_idx]["TrailGroupName"]
             )
 
-
         st.divider()
         display_metrics(filtered_trails)
 
@@ -265,19 +275,28 @@ with tab1:
 # Resolve selected trail
 # ==================================================
 selected_trail = None
+
 if st.session_state.selected_trail_id is not None:
     matches = trails.loc[
         trails["TrailGroupName"]
         == st.session_state.selected_trail_id
     ]
-    selected_trail = matches.iloc[[0]]
+    
+    if len(matches) == 1:
+        selected_trail = matches.iloc[[0]]
+    else: 
+        st.session_state.selected_trail_id = None
     
 
 # ==================================================
 # Tab 2: Map
 # ==================================================
 with tab2: 
-    trail_map = build_trail_map(filtered_trails, zipcode)
+    trail_map = build_trail_map(
+        filtered_trails,
+        zip_point
+    )
+
     st_folium(trail_map, height=600, width=1000)
 
     st.divider()
@@ -289,6 +308,7 @@ with tab2:
 # ==================================================
 with tab3:
     if selected_trail is not None:
+
         st.subheader(
             f'Trail: {selected_trail["HikingName"].iloc[0]} '
             f'in {selected_trail["County"].iloc[0]} County'
@@ -302,6 +322,7 @@ with tab3:
         buffer = create_trail_buffer(selected_trail)
 
         st.header("iNaturalist Observations")
+
         st.markdown(
             "Explore recent and historical sightings reported within two miles of the "
             "selected trail using data from [iNaturalist](https://www.inaturalist.org/), "
@@ -316,15 +337,24 @@ with tab3:
             )
 
             try: 
-                api_observations = fetch_recent_observations(buffer)
-                
-                normalized_observations = normalize_recent_observations(api_observations)
+                trail_id = st.session_state.selected_trail_id
 
-                filtered_api_observations = filter_observations_near_trail(
-                    selected_trail,
-                    normalized_observations
-                )
+                if trail_id not in st.session_state.recent_observations:
 
+                    api_observations = fetch_recent_observations(buffer)
+                    
+                    normalized_observations = normalize_recent_observations(api_observations)
+
+                    filtered_api_observations = filter_observations_near_trail(
+                        selected_trail,
+                        normalized_observations
+                    )
+
+                    st.session_state.recent_observations[
+                        trail_id
+                    ] = filtered_api_observations
+
+                filtered_api_observations = st.session_state.recent_observations[trail_id]
                 display_species_groups(
                     filtered_api_observations
                 )
