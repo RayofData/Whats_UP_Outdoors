@@ -28,7 +28,8 @@ from src.spatial import (
     filter_observations_near_trail
 )
 from src.maps import (
-    build_trail_map
+    build_trail_map,
+    build_observation_map
 )
 from src.inaturalist import (
     OBSERVATION_DISPLAY_COLUMNS,
@@ -329,56 +330,65 @@ with tab3:
             "a community platform for recording and sharing observations of biodiversity."
         )
 
+        api_warning = "Recent observations unavailable."
+        try: 
+            trail_id = st.session_state.selected_trail_id
+
+            if trail_id not in st.session_state.recent_observations:
+
+                api_observations = fetch_recent_observations(buffer)
+                
+                normalized_observations = normalize_recent_observations(api_observations)
+
+                filtered_api_observations = filter_observations_near_trail(
+                    selected_trail,
+                    normalized_observations
+                )
+
+                st.session_state.recent_observations[
+                    trail_id
+                ] = filtered_api_observations
+
+            filtered_api_observations = st.session_state.recent_observations[trail_id]
+
+
+        except requests.exceptions.RequestException:
+            st.warning(api_warning)
+        except requests.exceptions.HTTPError: 
+            st.warning(api_warning)
+        except requests.exceptions.ConnectionError:
+            st.warning(api_warning)
+        except requests.ReadTimeout:
+            st.warning(api_warning)
+
+        filtered_historical_observations = (
+            filter_observations_near_trail(
+                selected_trail, 
+                historical_observations
+            )
+        )
+
+
+        observation_map = build_observation_map(selected_trail)
+
+        st_folium(
+            observation_map,
+            height=600,
+            width=1000
+        )
+
         recent_col, historical_col = st.columns(2)
 
         with recent_col:
             st.subheader(
                 "Recent Observations: Last 21 Days"
             )
-            api_warning = "Recent observations unavailable."
-            try: 
-                trail_id = st.session_state.selected_trail_id
-
-                if trail_id not in st.session_state.recent_observations:
-
-                    api_observations = fetch_recent_observations(buffer)
-                    
-                    normalized_observations = normalize_recent_observations(api_observations)
-
-                    filtered_api_observations = filter_observations_near_trail(
-                        selected_trail,
-                        normalized_observations
-                    )
-
-                    st.session_state.recent_observations[
-                        trail_id
-                    ] = filtered_api_observations
-
-                filtered_api_observations = st.session_state.recent_observations[trail_id]
-                display_species_groups(
-                    filtered_api_observations
-                )
-
-            except requests.exceptions.RequestException:
-                st.warning(api_warning)
-            except requests.exceptions.HTTPError: 
-                st.warning(api_warning)
-            except requests.exceptions.ConnectionError:
-                st.warning(api_warning)
-            except requests.ReadTimeout:
-                st.warning(api_warning)
-            
-
+            display_species_groups(
+                filtered_api_observations
+            )
         with historical_col: 
             st.subheader(
                 "Historical Observations: Sept-Oct 2015-2025"
-            )
-            
-            filtered_historical_observations = (
-                filter_observations_near_trail(
-                    selected_trail, 
-                    historical_observations
-                )
             )
 
             display_species_groups(

@@ -1,13 +1,33 @@
 """Build interactive Folium maps for the Streamlit application."""
 
 import folium
+from folium.plugins import FeatureGroupSubGroup
 
 from src.locations import (
     zip_to_point,
 )
 
-UP_CENTER = [46.5, -87.5]
+from src.inaturalist import (
+    TAXON_GROUPS
+)
 
+UP_CENTER = [46.5, -87.5]
+RECENT_COLOR = "#F28C28"
+HISTORICAL_COLOR = "#4682B4"
+
+TAXON_ICONS = {
+    "Aves": "crow",
+    "Mammalia": "paw",
+    "Plantae": "leaf",
+    "Fungi": "seedling",
+    "Reptilia": "dragon",
+    "Insecta": "bug",
+}
+
+TAXON_LABEL = {
+    taxon_name: display_name
+    for display_name, taxon_name in TAXON_GROUPS.items()
+}
 
 def build_trail_map(trails, zip_point=None):
     """Build an interactive map of Upper Peninsula trails."""
@@ -63,3 +83,30 @@ def build_trail_map(trails, zip_point=None):
         ).add_to(trail_map)
 
     return trail_map
+
+
+def build_observation_map(selected_trail):
+    """Build an interactive map centered on the complete selected trail."""
+    map_trail = selected_trail.to_crs(epsg=4326).copy()
+
+    west, south, east, north = map_trail.total_bounds
+
+    observation_map = folium.Map(
+        tiles="OpenStreetMap",
+        control_scale=True
+    )
+
+    folium.GeoJson(
+        map_trail
+    ).add_to(observation_map)
+
+    observation_map.fit_bounds(
+        [
+            [south, west],
+            [north, east]
+        ],
+        padding=(30,30),
+        max_zoom=15
+    )
+
+    return observation_map
