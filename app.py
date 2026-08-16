@@ -33,6 +33,7 @@ from src.maps import (
 )
 from src.inaturalist import (
     OBSERVATION_DISPLAY_COLUMNS,
+    TAXON_GROUPS,
     convert_to_geodataframe,
     split_observations_by_taxon,
     summarize_species,
@@ -326,8 +327,10 @@ with tab3:
 
         st.markdown(
             "Explore recent and historical sightings reported within two miles of the "
-            "selected trail using data from [iNaturalist](https://www.inaturalist.org/), "
-            "a community platform for recording and sharing observations of biodiversity."
+            "selected trail using data from [iNaturalist](https://www.inaturalist.org/). "
+            "Recent observations are retrieved when a trail is first selected, so the initial "
+            "load may take a few moments, especially for trails with many observations. "
+            "Repeat views of the same trail are faster during the current session."
         )
 
         api_warning = "Recent observations unavailable."
@@ -368,8 +371,21 @@ with tab3:
             )
         )
 
-
-        observation_map = build_observation_map(selected_trail, filtered_api_observations, filtered_historical_observations)
+        taxon_filter = st.radio(
+            "Select which observation types show on map.",
+            options=[
+                "All",
+                *TAXON_GROUPS.keys(),
+                "None"
+            ],
+            horizontal=True
+        )
+        observation_map = build_observation_map(
+            selected_trail,
+            filtered_api_observations, 
+            filtered_historical_observations,
+            taxon_filter
+        )
 
         st_folium(
             observation_map,

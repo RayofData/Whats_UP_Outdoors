@@ -86,11 +86,29 @@ def build_trail_map(trails, zip_point=None):
     return trail_map
 
 
-def build_observation_map(selected_trail, recent_observations, historical_observations):
+def build_observation_map(
+    selected_trail, 
+    recent_observations, 
+    historical_observations,
+    taxon_filter = "All"
+    ):
     """Build an interactive map centered on the complete selected trail."""
     map_trail = selected_trail.to_crs(epsg=4326).copy()
     map_recent = recent_observations.to_crs(epsg=4326).copy()
     map_history = historical_observations.to_crs(epsg=4326).copy()
+
+    if taxon_filter == "None":
+        map_recent = map_recent.iloc[0:0]
+        map_history = map_history.iloc[0:0]
+    elif taxon_filter != "All":
+        taxon_name = TAXON_GROUPS[taxon_filter]
+
+        map_recent = map_recent.loc[
+            map_recent["iconic_taxon"] == taxon_name
+        ]
+        map_history = map_history.loc[
+            map_history["iconic_taxon"] == taxon_name
+        ]        
 
     taxon_totals = (
         map_recent["iconic_taxon"]
@@ -116,8 +134,26 @@ def build_observation_map(selected_trail, recent_observations, historical_observ
     )
 
     folium.GeoJson(
-        map_trail
+        map_trail,
+        name="Selected Trail",
+        control=False
     ).add_to(observation_map)
+
+    all_observations_group = folium.FeatureGroup(
+        name="All Observations"
+    ).add_to(observation_map)
+
+    taxon_groups = {}
+
+    for taxon_name, taxon_label in TAXON_LABEL.items():
+        taxon_group = FeatureGroupSubGroup(
+            all_observations_group,
+            taxon_label
+        )
+
+        observation_map.add_child(taxon_group)
+
+        taxon_groups[taxon_name] = taxon_group
 
 
     for observations, marker_color in observation_groups:
@@ -155,7 +191,7 @@ def build_observation_map(selected_trail, recent_observations, historical_observ
                 f'{observation["observed_on"].date()} | '
                 f'Total {taxon_label}: {taxon_total}'
             )
-        ).add_to(observation_map)
+        ).add_to(taxon_groups[taxon_name])
 
     observation_map.fit_bounds(
         [
@@ -167,3 +203,4 @@ def build_observation_map(selected_trail, recent_observations, historical_observ
     )
 
     return observation_map
+
