@@ -91,12 +91,25 @@ def build_observation_map(
     selected_trail, 
     recent_observations, 
     historical_observations,
+    full_historical_observations,
     taxon_filter = "All"
     ):
     """Build an interactive map centered on the complete selected trail."""
     map_trail = selected_trail.to_crs(epsg=4326).copy()
     map_recent = recent_observations.to_crs(epsg=4326).copy()
     map_history = historical_observations.to_crs(epsg=4326).copy()
+    map_full_history = full_historical_observations.to_crs(epsg=4326).copy()
+
+    taxon_totals = (
+        map_recent["iconic_taxon"]
+        .value_counts()
+        .add(
+            map_full_history["iconic_taxon"].value_counts(),
+            fill_value=0
+        )
+        .astype(int)
+        .to_dict()
+    )
 
     if taxon_filter == "None":
         map_recent = map_recent.iloc[0:0]
@@ -110,17 +123,6 @@ def build_observation_map(
         map_history = map_history.loc[
             map_history["iconic_taxon"] == taxon_name
         ]        
-
-    taxon_totals = (
-        map_recent["iconic_taxon"]
-        .value_counts()
-        .add(
-            map_history["iconic_taxon"].value_counts(),
-            fill_value=0
-        )
-        .astype(int)
-        .to_dict()
-    )
 
     observation_groups = [
         (map_recent, RECENT_COLOR),
@@ -174,8 +176,7 @@ def build_observation_map(
 
             popup_text = (
                 f'{observation["common_name"]} | '
-                f'{observation["observed_on"].date()} | '
-                f'Total {taxon_label}: {taxon_total}'
+                f'{observation["observed_on"].date()}'
             )
 
             if isinstance(image_url, str) and image_url:
@@ -199,9 +200,8 @@ def build_observation_map(
                     ),
                     prefix="fa"
                 ),
-                tooltip=(
-                    f"{observation["common_name"]}"
-                ),
+                tooltip = 
+                    f'{observation["common_name"]} ({taxon_total} {taxon_label})',
             popup = folium.Popup(
                 popup_text,
                 max_width=200,

@@ -26,7 +26,7 @@ from src.spatial import (
 )
 from src.spatial import (
     filter_observations_near_trail,
-    add_taxon_counts_to_trails
+    add_taxon_density_to_trails
 )
 from src.maps import (
     build_trail_map,
@@ -95,7 +95,7 @@ historical_observations = load_historical_observations()
 
 @st.cache_data
 def add_historical_taxon_counts(_trails, _historical_observations):
-    return add_taxon_counts_to_trails(trails, historical_observations)
+    return add_taxon_density_to_trails(trails, historical_observations)
 
 trails = add_historical_taxon_counts(trails, historical_observations)
 
@@ -195,9 +195,11 @@ st.image(BANNER_PATH)
 st.subheader(f"How to use {TITLE}: ")
 
 st.write(
-    "Browse trails across Michigan’s Upper Peninsula, narrow the list by length "
-    "or trail name, and select a trail to see more details and nearby iNaturalist "
-    "observations. Looking for trails near you? Use the ZIP code search in the sidebar."
+    "Browse hiking trails across Michigan’s Upper Peninsula, narrow the results "
+    "using trail filters or a ZIP code search, and select a trail to explore detailed "
+    "trail information and nearby iNaturalist observations. Use the tabs below to "
+    "compare trails in a table, explore them on an interactive map, view details for "
+    "a selected trail, or manage your saved favorite trails."
 )
 
 st.divider()
@@ -261,7 +263,15 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # Tab 1: Trails table
 # ==================================================
 with tab1:
-    
+    st.header("Browse & Filter Trails")
+
+    st.markdown(
+        "Compare the trails that match your current search and filters. "
+        "Select a trail from the table to view its details and nearby "
+        "iNaturalist observations in the third tab."
+    )
+
+
     if filtered_trails.empty:
         st.info("No trails match the current filters.")
 
@@ -301,7 +311,15 @@ if st.session_state.selected_trail_id is not None:
 # ==================================================
 # Tab 2: Map
 # ==================================================
-with tab2: 
+with tab2:
+    st.header("Explore Trails on Map")
+
+    st.markdown(
+        "View the trails that match your current search and filters on an "
+        "interactive map. Hover over a trail for its name and county, or click "
+        "it to view additional trail information."
+    )
+
     trail_map = build_trail_map(
         filtered_trails,
         zip_point
@@ -316,7 +334,11 @@ with tab2:
 
     st.divider()
 
+
     display_metrics(filtered_trails)
+    st.caption(
+        "Summary metrics reflect the trails currently displayed on the map."
+    )
 
 # ==================================================
 # Tab 3: Specific Trail details
@@ -324,7 +346,8 @@ with tab2:
 with tab3:
     if selected_trail is not None:
 
-        st.header("iNaturalist Observations")
+        st.header("Selected Trail Details")
+        st.subheader("iNaturalist Observations")
 
         st.markdown(
             "Explore iNaturalist observations reported within "
@@ -333,7 +356,7 @@ with tab3:
             "**historical observations** cover September & October from 2015–2025. Use the map "
             "filter to view all supported taxon groups or focus on a single group. "
             "Recent observations are retrieved when a trail is first selected, "
-            "so the initial load may take a few moments. Repeat views "
+            "so the initial load may take a moment on large trails. Repeat views "
             "of the same trail are faster during the current session. "
             "[Learn more about iNaturalist](https://www.inaturalist.org/)."
         )
@@ -405,6 +428,7 @@ with tab3:
             selected_trail,
             limited_api_observations, 
             limited_hist_observations,
+            filtered_historical_observations,
             taxon_filter
         )
 
@@ -442,4 +466,10 @@ with tab3:
 # Tab 4: Favorite Trails
 # ==================================================
 with tab4:
-    st.write("Favorites Coming Soon")
+    st.header("Saved Favorite Trails")
+
+    st.markdown(
+        "View and manage the trails you have saved as favorites during the current "
+        "session. Use this list to quickly revisit trails you want to compare, or download "
+        "your saved favorites for later reference."
+    )

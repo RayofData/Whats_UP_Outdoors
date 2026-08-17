@@ -8,6 +8,7 @@ MICHIGAN_GEOREF = "EPSG:3078"
 METERS_PER_MILE = 1609.344
 MAX_TRAIL_RESULTS = 20
 BUFFER_MILES = 2
+SQ_METERS_PER_SQ_MILE = METERS_PER_MILE ** 2
 
 
 def project_point(point):
@@ -66,8 +67,8 @@ def distances_to_trail(trail, points):
         / METERS_PER_MILE
     )
 
-def add_taxon_counts_to_trails(trails, observations, buffer_miles = BUFFER_MILES):
-    """Add nearby observation counts by taxon group to each trail."""
+def add_taxon_density_to_trails(trails, observations, buffer_miles = BUFFER_MILES):
+    """Add nearby observation density by taxon group to each trail."""
     trails_projected = trails.to_crs(MICHIGAN_GEOREF).copy()
     observations_projected = observations.to_crs(MICHIGAN_GEOREF).copy()
 
@@ -77,9 +78,14 @@ def add_taxon_counts_to_trails(trails, observations, buffer_miles = BUFFER_MILES
         buffer_miles * METERS_PER_MILE
     )
 
+    trail_buffers["BufferAreaSqMiles"] = (
+        trail_buffers.geometry.area
+        / SQ_METERS_PER_SQ_MILE
+    )
+
     observations_with_trails = gpd.sjoin(
         observations_projected,
-        trail_buffers,
+        trail_buffers[["TrailGroupName", "geometry"]],
         how="inner",
         predicate="within"
     )
@@ -91,39 +97,57 @@ def add_taxon_counts_to_trails(trails, observations, buffer_miles = BUFFER_MILES
         .unstack(fill_value=0)
     )
 
-    taxon_counts = taxon_counts.rename(
+    taxon_counts = taxon_counts.reindex(
+        columns=[
+            "Aves",
+            "Mammalia",
+            "Plantae",
+            "Fungi",
+            "Reptilia",
+            "Insecta",
+        ],
+        fill_value = 0
+    )
+
+    taxon_density = taxon_counts.div(
+        trail_buffers
+        .set_index("TrailGroupName")["BufferAreaSqMiles"],
+        axis = "index"
+    )
+
+    taxon_density = taxon_density.rename(
         columns={
-            "Aves": "BirdsCount",
-            "Mammalia": "MammalsCount",
-            "Plantae": "PlantsCount",
-            "Fungi": "FungiCount",
-            "Reptilia": "ReptilesCount",
-            "Insecta": "InsectsCount",
+            "Aves": "BirdsPerSqMile",
+            "Mammalia": "MammalsPerSqMile",
+            "Plantae": "PlantsPerSqMile",
+            "Fungi": "FungiPerSqMile",
+            "Reptilia": "ReptilesPerSqMile",
+            "Insecta": "InsectsPerSqMile",
         }
     )
 
-    trails_with_counts = trails.merge(
-        taxon_counts,
+    trails_with_density = trails.merge(
+        taxon_density,
         on="TrailGroupName",
         how="left"
     )
 
-    count_columns = [
-        "BirdsCount",
-        "MammalsCount",
-        "PlantsCount",
-        "FungiCount",
-        "ReptilesCount",
-        "InsectsCount",
+    density_columns = [
+        "BirdsPerSqMile",
+        "MammalsPerSqMile",
+        "PlantsPerSqMile",
+        "FungiPerSqMile",
+        "ReptilesPerSqMile",
+        "InsectsPerSqMile",
     ]
 
-    trails_with_counts[count_columns] = (
-        trails_with_counts[count_columns]
+    trails_with_density[density_columns] = (
+        trails_with_density[density_columns]
         .fillna(0)
-        .astype(int)
+        .round(2)
     )
 
-    return trails_with_counts
+    return trails_with_density
 
 
 def filter_observations_near_trail(trail, observations, buffer_miles = BUFFER_MILES):
