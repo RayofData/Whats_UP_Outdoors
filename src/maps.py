@@ -160,6 +160,7 @@ def build_observation_map(
     for observations, marker_color in observation_groups:
         for _, observation in observations.iterrows():
             taxon_name = observation["iconic_taxon"]
+            image_url = observation["image_url"]
 
             taxon_label = TAXON_LABEL.get(
                 taxon_name,
@@ -170,6 +171,20 @@ def build_observation_map(
                 taxon_name,
                 0
             )
+
+            popup_text = (
+                f'{observation["common_name"]} | '
+                f'{observation["observed_on"].date()} | '
+                f'Total {taxon_label}: {taxon_total}'
+            )
+
+            if isinstance(image_url, str) and image_url:
+                popup_text += (
+                    f'<br><img src="{image_url}" '
+                    f'width="150">'
+                )
+
+
 
             folium.Marker(
                 location=[
@@ -187,10 +202,10 @@ def build_observation_map(
                 tooltip=(
                     f"{observation["common_name"]}"
                 ),
-            popup=(
-                f'{observation["common_name"]} | '
-                f'{observation["observed_on"].date()} | '
-                f'Total {taxon_label}: {taxon_total}'
+            popup = folium.Popup(
+                popup_text,
+                max_width=200,
+                lazy=True
             )
         ).add_to(taxon_groups[taxon_name])
 

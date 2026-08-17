@@ -7,6 +7,7 @@ import geopandas as gpd
 MICHIGAN_GEOREF = "EPSG:3078"
 METERS_PER_MILE = 1609.344
 MAX_TRAIL_RESULTS = 20
+BUFFER_MILES = 2
 
 
 def project_point(point):
@@ -65,14 +66,73 @@ def distances_to_trail(trail, points):
         / METERS_PER_MILE
     )
 
+def add_taxon_counts_to_trails(trails, observations, buffer_miles = BUFFER_MILES):
+    """Add nearby observation counts by taxon group to each trail."""
+    trails_projected = trails.to_crs(MICHIGAN_GEOREF).copy()
+    observations_projected = observations.to_crs(MICHIGAN_GEOREF).copy()
 
-def filter_observations_near_trail(trail, observations, buffer_miles = 2):
+    trail_buffers = trails_projected[["TrailGroupName", "geometry"]].copy()
+
+    trail_buffers["geometry"] = trail_buffers.geometry.buffer(
+        buffer_miles * METERS_PER_MILE
+    )
+
+    observations_with_trails = gpd.sjoin(
+        observations_projected,
+        trail_buffers,
+        how="inner",
+        predicate="within"
+    )
+
+    taxon_counts = (
+        observations_with_trails
+        .groupby(["TrailGroupName", "iconic_taxon"])
+        .size()
+        .unstack(fill_value=0)
+    )
+
+    taxon_counts = taxon_counts.rename(
+        columns={
+            "Aves": "BirdsCount",
+            "Mammalia": "MammalsCount",
+            "Plantae": "PlantsCount",
+            "Fungi": "FungiCount",
+            "Reptilia": "ReptilesCount",
+            "Insecta": "InsectsCount",
+        }
+    )
+
+    trails_with_counts = trails.merge(
+        taxon_counts,
+        on="TrailGroupName",
+        how="left"
+    )
+
+    count_columns = [
+        "BirdsCount",
+        "MammalsCount",
+        "PlantsCount",
+        "FungiCount",
+        "ReptilesCount",
+        "InsectsCount",
+    ]
+
+    trails_with_counts[count_columns] = (
+        trails_with_counts[count_columns]
+        .fillna(0)
+        .astype(int)
+    )
+
+    return trails_with_counts
+
+
+def filter_observations_near_trail(trail, observations, buffer_miles = BUFFER_MILES):
     """Return observations within a specified milage of a trail"""
     distances = distances_to_trail(trail, observations)
     return observations.loc[distances <= buffer_miles].copy()
 
 
-def create_trail_buffer(trail, buffer_miles = 2):
+def create_trail_buffer(trail, buffer_miles = BUFFER_MILES):
     """Create buffer zone around trail for observation filter"""
 
     projected = trail.to_crs(MICHIGAN_GEOREF)

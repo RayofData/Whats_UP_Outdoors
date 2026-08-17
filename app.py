@@ -25,7 +25,8 @@ from src.spatial import (
     create_trail_buffer
 )
 from src.spatial import (
-    filter_observations_near_trail
+    filter_observations_near_trail,
+    add_taxon_counts_to_trails
 )
 from src.maps import (
     build_trail_map,
@@ -41,6 +42,7 @@ from src.inaturalist import (
     limit_observations
 )
 from src.apis.inaturalist_api import (
+    DAYS_RETRIEVED,
     fetch_recent_observations
 )
 
@@ -90,6 +92,12 @@ def load_historical_observations():
     return convert_to_geodataframe(observations)
 
 historical_observations = load_historical_observations()
+
+@st.cache_data
+def add_historical_taxon_counts(_trails, _historical_observations):
+    return add_taxon_counts_to_trails(trails, historical_observations)
+
+trails = add_historical_taxon_counts(trails, historical_observations)
 
 # ==================================================
 # Session States
@@ -299,7 +307,12 @@ with tab2:
         zip_point
     )
 
-    st_folium(trail_map, height=600, width=1000, returned_objects=[])
+    st_folium(
+        trail_map,
+        height=600,
+        width=1000,
+        returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
+    )
 
     st.divider()
 
@@ -311,6 +324,19 @@ with tab2:
 with tab3:
     if selected_trail is not None:
 
+        st.header("iNaturalist Observations")
+
+        st.markdown(
+            "Explore iNaturalist observations reported within "
+            f"two miles of the {st.session_state.selected_trail_id}. "
+            f"**Recent observations** cover the last {DAYS_RETRIEVED} days, while "
+            "**historical observations** cover September & October from 2015–2025. Use the map "
+            "filter to view all supported taxon groups or focus on a single group. "
+            "Recent observations are retrieved when a trail is first selected, "
+            "so the initial load may take a few moments. Repeat views "
+            "of the same trail are faster during the current session. "
+            "[Learn more about iNaturalist](https://www.inaturalist.org/)."
+        )
         st.subheader(
             f'Trail: {selected_trail["HikingName"].iloc[0]} '
             f'in {selected_trail["County"].iloc[0]} County'
@@ -321,17 +347,8 @@ with tab3:
             selectable=False
         )
 
+
         buffer = create_trail_buffer(selected_trail)
-
-        st.header("iNaturalist Observations")
-
-        st.markdown(
-            "Explore recent and historical sightings reported within two miles of the "
-            "selected trail using data from [iNaturalist](https://www.inaturalist.org/). "
-            "Recent observations are retrieved when a trail is first selected, so the initial "
-            "load may take a few moments, especially for trails with many observations. "
-            "Repeat views of the same trail are faster during the current session."
-        )
 
         api_warning = "Recent observations unavailable."
         try: 
@@ -395,7 +412,7 @@ with tab3:
             observation_map,
             height=600,
             width=1000,
-            returned_objects=[]
+            returned_objects=[] # Disable reruns from map interactions
         )
 
         recent_col, historical_col = st.columns(2)

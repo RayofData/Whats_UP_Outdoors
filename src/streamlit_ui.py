@@ -38,6 +38,12 @@ def display_trails_dataframe(trails, selectable=False):
             "TrailWidth",
             "SurfaceTypes",
             "TrailStatuses",
+            "BirdsCount",
+            "MammalsCount",
+            "PlantsCount",
+            "FungiCount",
+            "ReptilesCount",
+            "InsectsCount",
         ],
         "column_config": {
             "HikingName": "Trail",
