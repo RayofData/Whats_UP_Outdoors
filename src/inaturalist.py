@@ -168,3 +168,12 @@ def summarize_species(observations):
     )
 
     return summary
+
+def limit_observations(observations, limit=25):
+    """Return up to a set number of observations from each TAXON group to help load map"""
+    return(
+        observations
+        .sort_values("observed_on", ascending=False)
+        .groupby("iconic_taxon", group_keys=False)
+        .head(limit)
+    )

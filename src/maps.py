@@ -1,5 +1,6 @@
 """Build interactive Folium maps for the Streamlit application."""
 
+import streamlit as st 
 import folium
 from folium.plugins import FeatureGroupSubGroup
 
@@ -29,7 +30,7 @@ TAXON_LABEL = {
     for display_name, taxon_name in TAXON_GROUPS.items()
 }
 
-
+@st.fragment()
 def build_trail_map(trails, zip_point=None):
     """Build an interactive map of Upper Peninsula trails."""
     map_trails = trails.to_crs(epsg=4326).copy()
@@ -85,7 +86,7 @@ def build_trail_map(trails, zip_point=None):
 
     return trail_map
 
-
+@st.fragment
 def build_observation_map(
     selected_trail, 
     recent_observations, 
