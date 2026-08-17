@@ -37,7 +37,8 @@ from src.inaturalist import (
     convert_to_geodataframe,
     split_observations_by_taxon,
     summarize_species,
-    normalize_recent_observations
+    normalize_recent_observations,
+    limit_observations
 )
 from src.apis.inaturalist_api import (
     fetch_recent_observations
@@ -70,7 +71,6 @@ TITLE = "What's UP Outdoors"
 
 st.set_page_config(
     page_title = TITLE, 
-    initial_sidebar_state = "expanded", 
     layout="wide"
 )
 
@@ -299,7 +299,7 @@ with tab2:
         zip_point
     )
 
-    st_folium(trail_map, height=600, width=1000)
+    st_folium(trail_map, height=600, width=1000, returned_objects=[])
 
     st.divider()
 
@@ -370,6 +370,10 @@ with tab3:
                 historical_observations
             )
         )
+        
+        limited_api_observations = limit_observations(filtered_api_observations)
+        limited_hist_observations = limit_observations(filtered_historical_observations)
+
 
         taxon_filter = st.radio(
             "Select which observation types show on map.",
@@ -382,15 +386,16 @@ with tab3:
         )
         observation_map = build_observation_map(
             selected_trail,
-            filtered_api_observations, 
-            filtered_historical_observations,
+            limited_api_observations, 
+            limited_hist_observations,
             taxon_filter
         )
 
         st_folium(
             observation_map,
             height=600,
-            width=1000
+            width=1000,
+            returned_objects=[]
         )
 
         recent_col, historical_col = st.columns(2)
@@ -400,7 +405,7 @@ with tab3:
                 "Recent Observations: Last 21 Days"
             )
             display_species_groups(
-                filtered_api_observations
+                limited_api_observations
             )
         with historical_col: 
             st.subheader(
@@ -408,7 +413,7 @@ with tab3:
             )
 
             display_species_groups(
-                filtered_historical_observations
+                limited_hist_observations
             )
 
     else:
