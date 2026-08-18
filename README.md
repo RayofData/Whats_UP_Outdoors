@@ -1,187 +1,144 @@
-![What's UP Outdoors banner](static/banner.png)
+# What’s UP Outdoors
 
-# What’s UP Outdoors: Upper Peninsula Trail Explorer
+**What’s UP Outdoors** is a Python and Streamlit application for exploring hiking trails and nearby iNaturalist observations across Michigan’s Upper Peninsula.
 
-What’s UP Outdoors is a Python and Streamlit portfolio project for discovering hiking trails and nearby iNaturalist observations in Michigan’s Upper Peninsula.
+[Launch the live app](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/) | [Project specification](SPEC.md) | [AI use disclosure](AI_USE_DISCLOSURE.md)
 
-The MVP emphasizes reproducible geospatial processing, API integration, automated testing, and a maintainable modular structure.
+## Overview
 
-## MVP Features
+The application combines Michigan DNR trail data with recent and historical iNaturalist observations to help users discover trails, compare trail characteristics, and explore nature observations reported nearby.
 
-- Search from any valid United States ZIP code
-- Choose a 10, 25, or 50 mile search radius
-- View up to 20 nearby UP trails, ordered from nearest to farthest
-- Compare trail name, county, length category, reported length, width, surface, status, and distance from the entered ZIP code
-- Explore all trails or nearby search results on a Folium map
-- Select any Upper Peninsula trail for a detailed trail view
-- Map recent and historical iNaturalist observations within two miles of the selected trail
-- View recent observations from the previous 21 days
-- View fixed historical September–October observations from 2015–2025
-- View up to 10 species within each supported taxon group
-- Save favorite trails during the current Streamlit session
-- Export favorites as a CSV file
+I started the project while planning a fall-color trip to Michigan’s Upper Peninsula. I wanted a practical way to compare hiking options near the places we might visit and see what plants and wildlife had been observed around those trails during recent and previous fall seasons.
 
-## Future Enhancements
+Users can search from a ZIP code, filter trails, explore results on interactive maps, inspect individual trails, and save favorites during the current Streamlit session.
 
-* **AI-generated natural-language summaries:** Use an AI API to summarize selected trail attributes and nearby observation data in clear, grounded language.
-* **Automated data refresh pipeline:** Automate DNR data refreshes and validation through a scheduled ETL workflow, such as GitHub Actions.
-* **Downloadable trail reports:** Generate a report for a selected trail containing trail details, maps, observation summaries, and other key information.
+The project also serves as a portfolio demonstration of geospatial analysis, API integration, reproducible data preparation, Streamlit application development, and automated testing.
 
 
-## Application Layout
+## Using the App
 
-The Streamlit app uses four main tabs:
+The application has four main tabs.
 
-1. **Trails** — displays all trails before a ZIP search and up to 20 nearby trails after a search.
-2. **Map** — displays the corresponding trail set on an interactive Folium map.
-3. **Trail Details** — allows selection of any Upper Peninsula trail and displays trail attributes, nearby iNaturalist observations, species summaries, and favorite controls.
-4. **Favorite Trails** — displays favorite trails, include a map, and option to save as csv.
+### Browse & Filter Trails
 
-## Architecture
+Browse all available Upper Peninsula trails or narrow the results using a ZIP code, search radius, trail length, surface type, or trail name.
 
-The project separates application runtime, offline ETL workflows, and reusable application logic.
+ZIP searches return up to 20 nearby trails ordered from nearest to farthest.
 
-### Application
-app.py is the Streamlit application entry point.
-The deployed application reads the processed trail and historical iNaturalist Parquet datasets directly from data/processed/.
-Runtime API requests, spatial operations, mapping, and interface logic are delegated to modules under src/.
+### Explore Trails on Map
 
-### Offline ETL utilities
+View the current trail results on an interactive map and inspect trail information directly from the map.
 
-Data-preparation workflows are stored under util/:
+### Selected Trail Details
 
-util/etl_dnr_trails.py downloads Michigan DNR trail data, validates and transforms the source data, and creates the app-ready trail GeoParquet dataset.
-util/etl_inaturalist_history.py converts the manually downloaded historical iNaturalist CSV export into the compressed Parquet dataset used by the application.
+Select a trail from the results table to view:
 
-These ETL scripts are used to reproduce or refresh the processed datasets and are not required during normal application startup.
+* trail characteristics
+* full trail geometry
+* recent iNaturalist observations
+* historical fall observations
+* species summaries by taxon group
 
-### Reusable modules
+Nearby observations are filtered to those reported within two miles of the selected trail.
 
-```text
-src/
-├── apis/
-│   ├── dnr_api.py
-│   └── inaturalist_api.py
-├── trails.py
-├── locations.py
-├── spatial.py
-├── inaturalist.py
-├── streamlit_ui.py
-└── maps.py
-```
+### Saved Favorite Trails
 
-API modules contain HTTP request and API-response validation logic only. Data cleaning, spatial calculations, summaries, mapping, and Streamlit rendering remain outside the API modules.
+Save trails during the current Streamlit session, compare them together, and export the list as a CSV file.
 
-Spatial distance calculations use Michigan GeoRef (`EPSG:3078`). Folium map geometry uses WGS 84 (`EPSG:4326`).
+## Run Locally
 
-## Project Structure
+The easiest way to use the project is through the deployed Streamlit app:
 
-```text
-Whats_UP_Outdoors/
-├── app.py
-├── README.md
-├── SPEC.md
-├── requirements.txt
-├── AI_USE_DISCLOSURE.md
-├── static/
-│   ├── banner.png
-│   └── map_up.jpg
-├── util/
-│   ├── etl_dnr_trails.py
-│   └── etl_inaturalist_history.py
-├── data/
-│   ├── raw/
-│   └── processed/
-│       ├── dnr_up_hiking_trails_grouped.parquet
-│       └── inaturalist_historical_up_fall_observations.parquet
-├── src/
-│   ├── apis/
-│   │   ├── dnr_api.py
-│   │   └── inaturalist_api.py
-│   ├── trails.py
-│   ├── locations.py
-│   ├── spatial.py
-│   ├── inaturalist.py
-│   ├── streamlit_up.py
-│   └── maps.py
-└── tests/
-```
+[Open What’s UP Outdoors](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/)
 
-## Run the Application
-### Browser
+For local development, create and activate a Python 3.12 virtual environment:
 
-What’s UP Outdoors is intended to be deployed with Streamlit Community Cloud.
-
-Once deployed, the application can be opened directly in a web browser without cloning the repository, installing Python, or preparing the source datasets locally.
-
-Live application: *Streamlit deployment link [here](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/).*
-
-The processed DNR trail and historical iNaturalist datasets required by the application are bundled with the repository for the deployed demo.
-
-### Local development
-
-Local setup is only required for development or reproducing the data-processing workflows.
-
-Create and activate a Python 3.12 virtual environment:
-
-```
+```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
 Install dependencies:
-```
+
+```powershell
 python -m pip install -r requirements.txt
 ```
-Run the automated tests:
-```
+
+Run the tests:
+
+```powershell
 pytest
 ```
-Start the application locally:
-```
+
+Start the application:
+
+```powershell
 streamlit run app.py
 ```
 
-### Rebuild the processed datasets
+Processed datasets required by the application are included in the repository, so rebuilding them is not required to run the app.
 
-The processed datasets are already available to the application. These commands are only needed when reproducing or refreshing the source-data pipelines.
+To reproduce or refresh the processed datasets:
 
-Rebuild the Michigan DNR trail dataset:
-```
+```powershell
 python util/etl_dnr_trails.py
-```
-Rebuild the historical iNaturalist dataset:
-```
 python util/etl_inaturalist_history.py
 ```
-The historical iNaturalist workflow requires the [manually downloaded source CSV](https://www.inaturalist.org/observations/export?quality_grade=any&identifications=any&swlat=45.0764339&swlng=-90.4181358&nelat=48.3060628&nelng=-83.4335579&month%5B%5D=9&month%5B%5D=10&verifiable=true&d1=2015-01-01&spam=false) to be present under data/raw/.
+The historical iNaturalist workflow requires the [manually downloaded](https://www.inaturalist.org/observations/export?quality_grade=any&identifications=any&swlat=45.0764339&swlng=-90.4181358&nelat=48.3060628&nelng=-83.4335579&month%5B%5D=9&month%5B%5D=10&verifiable=true&d1=2015-01-01&spam=false) source CSV to be present under data/raw/.
 
-## Data and Sources
-
-What’s UP Outdoors uses three external data sources:
-
-* **Michigan DNR Hiking Trails Open Data** for Upper Peninsula trail geometry and attributes.
-* **iNaturalist** for recent and historical nature observations.
-* **GeoNames postal-code data through `pgeocode`** for ZIP-code lookup.
-
-The processed DNR trail dataset is produced by `util/etl_dnr_trails.py` from the Michigan DNR ArcGIS REST API. Trail segments are cleaned, grouped, and stored as an app-ready GeoParquet dataset.
-
-Recent iNaturalist observations are requested from the API at runtime for the previous 21 days. Historical observations come from a manually downloaded September–October 2015–2025 export and are converted to Parquet by `util/etl_inaturalist_history.py`.
-
-Processed datasets required by the deployed application are included in the repository. Raw source data remains local.
-
-## Technologies
-
-Python, pandas, GeoPandas, Shapely, Streamlit, Folium, streamlit-folium, Requests, PyArrow, pgeocode, and pytest.
+See [`SPEC.md`](SPEC.md) for detailed architecture, data-processing, spatial, and testing requirements.
 
 ## Limitations
 
-* ZIP-to-trail distance is straight-line spatial distance to the trail geometry, not driving distance.
-* DNR attributes may be missing or vary across grouped trail segments.
+* ZIP-to-trail distance is straight-line spatial distance, not driving distance.
 * Trail status reflects the DNR source data and may not represent current on-site conditions.
 * Historical iNaturalist observations are limited to September–October 2015–2025.
 * Recent observation availability depends on the iNaturalist API.
 * iNaturalist observations represent reported sightings and do not guarantee species presence.
-* The application does not provide navigation, safety guidance, or wildlife guarantees.
+* The application is intended for exploration and trip planning, not navigation or safety guidance.
 
-See [`SPEC.md`](SPEC.md) for the complete MVP requirements.
+## Future Enhancements
+
+* **AI-generated trail summaries:** Summarize trail characteristics and nearby observation data in grounded natural language.
+* **Automated data refresh pipeline:** Periodically refresh and validate source datasets through an automated ETL workflow.
+* **Downloadable trail reports:** Generate reports containing trail details, maps, and observation summaries.
+
+## Project Structure
+
+```
+Whats_UP_Outdoors/
+├── app.py                                  # Streamlit application entry point
+├── README.md                               # Project overview and usage instructions
+├── SPEC.md                                 # Detailed MVP requirements and architecture
+├── requirements.txt                        # Python dependencies
+├── AI_USE_DISCLOSURE.md                    # Disclosure of AI-assisted project work
+│
+├── static/                                 # Images used by the Streamlit interface
+│   ├── banner.png                          # Application banner
+│   └── map_up.jpg                          # Upper Peninsula sidebar map
+│
+├── util/                                   # Offline data preparation workflows
+│   ├── etl_dnr_trails.py                   # Downloads and processes Michigan DNR trail data
+│   └── etl_inaturalist_history.py          # Processes historical iNaturalist observations
+│
+├── data/
+│   ├── raw/                                # Local source data used by ETL workflows
+│   └── processed/                          # App-ready datasets
+│       ├── dnr_up_hiking_trails_grouped.parquet
+│       │                                   # Processed and grouped DNR trail data
+│       └── inaturalist_historical_up_fall_observations.parquet
+│                                           # Processed historical fall observations
+│
+├── src/                                    # Reusable application logic
+│   ├── apis/                               # External API request logic
+│   │   ├── dnr_api.py                      # Michigan DNR API helpers
+│   │   └── inaturalist_api.py              # iNaturalist API helpers
+│   ├── trails.py                           # Trail cleaning, grouping, and filtering
+│   ├── locations.py                        # ZIP validation and geocoding
+│   ├── spatial.py                          # Distance and spatial filtering operations
+│   ├── inaturalist.py                      # Observation normalization and summaries
+│   ├── streamlit_ui.py                     # Reusable Streamlit display helpers
+│   └── maps.py                             # Folium map construction
+│
+└── tests/                                  # Automated pytest test suite
+```
