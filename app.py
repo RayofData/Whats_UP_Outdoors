@@ -79,13 +79,13 @@ st.set_page_config(
 # ==================================================
 # Load Data
 # ==================================================
-@st.cache_data
+@st.cache_data(show_spinner="Loading trail data...", show_time=True)
 def load_trails(): 
     return gpd.read_parquet(PROCESSED_PATH_TRAILS)
 
 trails = load_trails()
 
-@st.cache_data
+@st.cache_data(show_spinner="Loading historical iNaturalist observations...", show_time=True)
 def load_historical_observations():
     observations = pd.read_parquet(PROCESSED_PATH_OBS)
     
@@ -93,7 +93,7 @@ def load_historical_observations():
 
 historical_observations = load_historical_observations()
 
-@st.cache_data
+@st.cache_data(show_spinner="Preparing trail and historical observation data...", show_time=True)
 def add_historical_taxon_counts(_trails, _historical_observations):
     return add_taxon_density_to_trails(trails, historical_observations)
 
@@ -443,7 +443,7 @@ with tab3:
 
         with recent_col:
             st.subheader(
-                "Recent Observations: Last 21 Days"
+                f"Recent Observations: Last {DAYS_RETRIEVED} Days"
             )
             display_species_groups(
                 limited_api_observations
@@ -473,3 +473,17 @@ with tab4:
         "session. Use this list to quickly revisit trails you want to compare, or download "
         "your saved favorites for later reference."
     )
+
+st.divider()
+
+st.caption(
+    "Originally built while planning a fall-color trip through Michigan’s Upper Peninsula. "
+    "What’s UP Outdoors combines trail information with nearby nature observations to help "
+    "explore possible hiking destinations."
+)
+
+st.markdown(
+    "Built by [Ray Hobbs](https://github.com/RayofData) · "
+    "[GitHub](https://github.com/RayofData/Whats_UP_Outdoors) · "
+    "[LinkedIn](https://www.linkedin.com/in/ray-hobbs/)"
+)
