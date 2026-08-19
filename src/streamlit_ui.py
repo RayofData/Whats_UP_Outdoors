@@ -2,6 +2,8 @@
 
 import pandas as pd
 import streamlit as st
+from streamlit_folium import st_folium
+from datetime import datetime
 
 from src.inaturalist import (
     split_observations_by_taxon,
@@ -10,6 +12,10 @@ from src.inaturalist import (
 
 from src.trails import (
     favorite_trails_df
+)
+
+from src.maps import (
+    build_trail_map
 )
 
 def reset_selection():
@@ -107,7 +113,7 @@ def display_favorite_trails_dataframe(trails):
     )
 
     display_df = add_taxon_density_display_column(display_df)
-    
+
     st.dataframe(
         display_df,
         column_order = [
@@ -137,19 +143,37 @@ def display_favorite_trails_dataframe(trails):
 @st.fragment
 def display_favorites_section(trails):
     """Display and refresh favorite trails and session notes."""
+    st.button(
+        "Refresh Favorites",
+        key = "refresh_favorites"
+    )
 
     favorites_df = favorite_trails_df(
         trails,
         st.session_state.favorites
     )
 
-    display_df = display_favorite_trails_dataframe(
-        favorites_df
+    with st.spinner("Loading trail map...", show_time=True):
+        favorites_map = build_trail_map(favorites_df)
+
+        st_folium(
+            favorites_map,
+            height=600,
+            width=1000,
+            returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
+        )
+
+        map_html = favorites_map.get_root().render()
+
+    st.download_button(
+        label = "Download Trail Map",
+        data = map_html,
+        file_name = "trail_map.html",
+        mime = "text/html"
     )
 
-    st.button(
-        "Refresh Favorites",
-        key = "refresh_favorites"
+    display_df = display_favorite_trails_dataframe(
+        favorites_df
     )
 
     if display_df.empty:
@@ -157,6 +181,12 @@ def display_favorites_section(trails):
         return
 
     st.subheader("Trail Notes")
+    st.info(
+        "Add or edit notes in the text areas below. Press Ctrl+Enter or Command+Enter "
+        "to save each note. Notes are stored for the current session and included in "
+        "the Favorites CSV download. After saving your changes, use Download Favorites "
+        "to export the latest trail details and notes."
+    )
 
     for _, trail in display_df.iterrows():
         trail_id = trail["TrailGroupName"]
@@ -172,6 +202,54 @@ def display_favorites_section(trails):
         )
 
         st.session_state.favorites_notes[trail_id] = note
+
+    download_df = add_taxon_density_display_column(
+        favorites_df.drop(
+            columns="geometry",
+            errors="ignore"
+        )
+    )
+    
+    download_df["Notes"] = (
+        download_df["TrailGroupName"]
+        .map(st.session_state.favorites_notes)
+        .fillna("")
+    )
+
+
+    download_df = download_df[
+        [
+            "HikingName",
+            "County",
+            "LengthCategory",
+            "ReportedLengthMiles",
+            "TrailWidth",
+            "SurfaceTypes",
+            "TaxonDensity",
+            "Notes",
+        ]
+    ].rename(
+        columns={
+            "HikingName": "Trail",
+            "ReportedLengthMiles": "Length (Miles)",
+            "TrailWidth": "Width",
+            "SurfaceTypes": "Surface",
+            "TaxonDensity": "Taxon Density",
+        }
+    )
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+
+    filename = f"trail_favorites_{timestamp}.csv"
+    
+    st.download_button(
+        label = "Download Favorites",
+        data = download_df.to_csv(index = False),
+        file_name=filename,
+        mime="text/csv"
+    )
+
+
 
 
 def display_species_groups(observations):

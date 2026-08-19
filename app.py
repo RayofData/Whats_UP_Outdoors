@@ -479,17 +479,7 @@ with tab4:
         st.session_state.favorites
     )
 
-    with st.spinner("Loading trail map...", show_time=True):
-        favorites_map = build_trail_map(favorites_df)
 
-        st_folium(
-            favorites_map,
-            height=600,
-            width=1000,
-            returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
-        )
-
-        map_html = favorites_map.get_root().render()
 
 
     display_favorites_section(trails)
@@ -501,57 +491,7 @@ with tab4:
 # ==================================================
 # Download Favorite Trails
 # ==================================================
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
-    filename = f"trail_favorites_{timestamp}.csv"
 
-    download_df = add_taxon_density_display_column(
-        favorites_df.drop(columns="geometry", errors="ignore")
-    )
-
-    download_df["Notes"] = (
-        download_df["TrailGroupName"]
-        .map(st.session_state.favorites_notes)
-        .fillna("")
-    )
-
-
-    download_df = download_df[
-        [
-            "HikingName",
-            "County",
-            "LengthCategory",
-            "ReportedLengthMiles",
-            "TrailWidth",
-            "SurfaceTypes",
-            "TaxonDensity",
-            "Notes",
-        ]
-    ].rename(
-        columns={
-            "HikingName": "Trail",
-            "ReportedLengthMiles": "Length (Miles)",
-            "TrailWidth": "Width",
-            "SurfaceTypes": "Surface",
-            "TaxonDensity": "Taxon Density",
-        }
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.download_button(
-            label = "Download Favorites",
-            data = download_df.to_csv(index = False),
-            file_name=filename,
-            mime="text/csv"
-        )
-    with col2:
-        st.download_button(
-            label = "Download Trail Map",
-            data = map_html,
-            file_name = "trail_map.html",
-            mime = "text/html"
-        )
 
 st.divider()
 
