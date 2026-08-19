@@ -2,6 +2,7 @@
 
 import streamlit as st 
 import folium
+from streamlit_folium import st_folium
 from folium.plugins import FeatureGroupSubGroup
 
 from src.locations import (
@@ -220,3 +221,36 @@ def build_observation_map(
 
     return observation_map
 
+
+@st.fragment
+def display_observation_map_fragment(
+    selected_trail, 
+    limited_api_observations, 
+    limited_hist_observations, 
+    filtered_historical_observations
+):
+    taxon_filter = st.radio(
+        "Select which observation types show on map.",
+        options=[
+            "All",
+            *TAXON_GROUPS.keys(),
+            "None"
+        ],
+        horizontal=True
+    )
+
+    with st.spinner("Loading observation map...", show_time=True):
+        observation_map = build_observation_map(
+            selected_trail,
+            limited_api_observations, 
+            limited_hist_observations,
+            filtered_historical_observations,
+            taxon_filter
+        )
+
+        st_folium(
+            observation_map,
+            height=600,
+            width=1000,
+            returned_objects=[] # Disable reruns from map interactions
+        )

@@ -32,7 +32,7 @@ from src.spatial import (
 )
 from src.maps import (
     build_trail_map,
-    build_observation_map
+    display_observation_map_fragment
 )
 from src.inaturalist import (
     OBSERVATION_DISPLAY_COLUMNS,
@@ -325,17 +325,18 @@ with tab2:
         "it to view additional trail information."
     )
 
-    trail_map = build_trail_map(
-        filtered_trails,
-        zip_point
-    )
+    with st.spinner("Loading trail map...", show_time=True):
+        trail_map = build_trail_map(
+            filtered_trails,
+            zip_point
+        )
 
-    st_folium(
-        trail_map,
-        height=600,
-        width=1000,
-        returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
-    )
+        st_folium(
+            trail_map,
+            height=600,
+            width=1000,
+            returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
+        )
 
     st.divider()
 
@@ -398,71 +399,55 @@ with tab3:
 # ==================================================
         buffer = create_trail_buffer(selected_trail)
         api_warning = "Recent observations unavailable."
-        try: 
-            trail_id = st.session_state.selected_trail_id
+        
+        with st.spinner("Loading recent observations...", show_time=True):
+            try: 
+                trail_id = st.session_state.selected_trail_id
 
-            if trail_id not in st.session_state.recent_observations:
+                if trail_id not in st.session_state.recent_observations:
 
-                api_observations = fetch_recent_observations(buffer)
-                
-                normalized_observations = normalize_recent_observations(api_observations)
+                    api_observations = fetch_recent_observations(buffer)
+                    
+                    normalized_observations = normalize_recent_observations(api_observations)
 
-                filtered_api_observations = filter_observations_near_trail(
-                    selected_trail,
-                    normalized_observations
+                    filtered_api_observations = filter_observations_near_trail(
+                        selected_trail,
+                        normalized_observations
+                    )
+
+                    st.session_state.recent_observations[
+                        trail_id
+                    ] = filtered_api_observations
+
+                filtered_api_observations = st.session_state.recent_observations[trail_id]
+
+
+            except requests.exceptions.RequestException:
+                st.warning(api_warning)
+            except requests.exceptions.HTTPError: 
+                st.warning(api_warning)
+            except requests.exceptions.ConnectionError:
+                st.warning(api_warning)
+            except requests.ReadTimeout:
+                st.warning(api_warning)
+
+            filtered_historical_observations = (
+                filter_observations_near_trail(
+                    selected_trail, 
+                    historical_observations
                 )
-
-                st.session_state.recent_observations[
-                    trail_id
-                ] = filtered_api_observations
-
-            filtered_api_observations = st.session_state.recent_observations[trail_id]
-
-
-        except requests.exceptions.RequestException:
-            st.warning(api_warning)
-        except requests.exceptions.HTTPError: 
-            st.warning(api_warning)
-        except requests.exceptions.ConnectionError:
-            st.warning(api_warning)
-        except requests.ReadTimeout:
-            st.warning(api_warning)
-
-        filtered_historical_observations = (
-            filter_observations_near_trail(
-                selected_trail, 
-                historical_observations
             )
-        )
         
         limited_api_observations = limit_observations(filtered_api_observations)
         limited_hist_observations = limit_observations(filtered_historical_observations)
 
-
-        taxon_filter = st.radio(
-            "Select which observation types show on map.",
-            options=[
-                "All",
-                *TAXON_GROUPS.keys(),
-                "None"
-            ],
-            horizontal=True
+        display_observation_map_fragment(
+            selected_trail, 
+            limited_api_observations,
+            limited_hist_observations, 
+            filtered_historical_observations
         )
-        observation_map = build_observation_map(
-            selected_trail,
-            limited_api_observations, 
-            limited_hist_observations,
-            filtered_historical_observations,
-            taxon_filter
-        )
-
-        st_folium(
-            observation_map,
-            height=600,
-            width=1000,
-            returned_objects=[] # Disable reruns from map interactions
-        )
-
+        
         recent_col, historical_col = st.columns(2)
 
         with recent_col:
@@ -493,21 +478,24 @@ with tab4:
     st.header("Saved Favorite Trails")
 
     st.markdown(
-        "View and manage the trails you have saved as favorites during the current "
-        "session. Use this list to quickly revisit trails you want to compare, or download "
-        "your saved favorites for later reference."
+        "View the trails you have saved as favorites during the current "
+        "session. Add personal notes for each trail to help with comparison and trip planning. "
+        "Notes are saved for the current session and are included when you download your "
+        "favorite trails as a CSV for later reference."
     )
 
     favorites_df = favorite_trails_df(trails, st.session_state.favorites)
-    favorites_map = build_trail_map(favorites_df)
 
-    st_folium(
-        favorites_map,
-        height=600,
-        width=1000,
-        returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
-    )
-    display_favorites_df = display_favorite_trails_dataframe(favorites_df)
+    with st.spinner("Loading trail map...", show_time=True):
+        favorites_map = build_trail_map(favorites_df)
+
+        st_folium(
+            favorites_map,
+            height=600,
+            width=1000,
+            returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
+        )
+        display_favorites_df = display_favorite_trails_dataframe(favorites_df)
 
     st.subheader("Trail Notes")
 
