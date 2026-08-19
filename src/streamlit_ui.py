@@ -74,6 +74,63 @@ def display_trails_dataframe(trails, selectable=False):
         **dataframe_options,
     )
 
+def display_favorite_trails_dataframe(trails):
+    """Display favorite trail data with an editable notes column."""
+    display_df = pd.DataFrame(
+        trails.drop(columns="geometry", errors="ignore")
+    )
+
+    display_df["TaxonDensity"] = (
+        "Birds: " + display_df["BirdsPerSqMile"].map("{:.2f}".format)
+        + " | Mammals: " + display_df["MammalsPerSqMile"].map("{:.2f}".format)
+        + " | Plants: " + display_df["PlantsPerSqMile"].map("{:.2f}".format)
+        + " | Fungi: " + display_df["FungiPerSqMile"].map("{:.2f}".format)
+        + " | Reptiles: " + display_df["ReptilesPerSqMile"].map("{:.2f}".format)
+        + " | Insects: " + display_df["InsectsPerSqMile"].map("{:.2f}".format)
+    )
+
+    display_df["Notes"] = ""
+
+    dataframe_options = {
+        "column_order": [
+            "HikingName",
+            "County",
+            "LengthCategory",
+            "ReportedLengthMiles",
+            "TrailWidth",
+            "SurfaceTypes",
+            "TaxonDensity",
+            "Notes"
+        ],
+        "column_config": {
+            "HikingName": "Trail",
+            "County": "County",
+            "LengthCategory": "Length Category",
+            "ReportedLengthMiles": "Length (Miles)",
+            "TrailWidth": "Width",
+            "SurfaceTypes": "Surface",
+            "TaxonDensity": "Taxon Density",
+            "Notes": st.column_config.TextColumn(
+                "Notes",
+                help="Add personal notes about this trail.",
+                width="large",
+            ),
+        },
+        "hide_index": True,
+    }
+
+
+    edited_df = st.data_editor(
+        display_df,
+        disabled=[
+            col for col in display_df.columns
+            if col != "Notes"
+        ],
+        **dataframe_options,
+    )
+
+    return edited_df
+
 
 def display_species_groups(observations):
     """Display top species within each supported taxon group."""

@@ -52,6 +52,7 @@ from src.streamlit_ui import (
     reset_selection,
     reset_search,
     display_trails_dataframe,
+    display_favorite_trails_dataframe,
     display_species_groups,
     display_metrics,
 )
@@ -116,6 +117,8 @@ if "recent_observations" not in st.session_state:
 if "favorites" not in st.session_state:
     st.session_state.favorites = []
 
+if "favorites_notes" not in st.session_state:
+    st.session_state.favorites_notes = {}
 
 length_categories = []
 trail_name = ""
@@ -495,7 +498,7 @@ with tab4:
         "your saved favorites for later reference."
     )
 
-    favorites_df = favorite_trails_df(trails, st.session_state.favorites)
+    favorites_df = favorite_trails_df(trails, st.session_state.favorites, st.session_state.favorites_notes)
     favorites_map = build_trail_map(favorites_df)
 
     st_folium(
@@ -504,9 +507,9 @@ with tab4:
         width=1000,
         returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
     )
-    display_trails_dataframe(favorites_df)
+    display_favorite_trails_dataframe(favorites_df)
 
-    timestamp= datetime.now().strftime("%Y-%m-%d_%H%M")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
     filename = f"trail_favorites_{timestamp}.csv"
 
     st.download_button(
