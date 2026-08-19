@@ -8,6 +8,10 @@ from src.inaturalist import (
     summarize_species,
 )
 
+from src.trails import (
+    favorite_trails_df
+)
+
 def reset_selection():
     """Clear the selected trail when search criteria change."""
     st.session_state.selected_trail_id = None
@@ -74,6 +78,7 @@ def display_trails_dataframe(trails, selectable=False):
         **dataframe_options,
     )
 
+
 def display_favorite_trails_dataframe(trails):
     """Display favorite trail data with an editable notes column."""
     display_df = pd.DataFrame(
@@ -118,9 +123,28 @@ def display_favorite_trails_dataframe(trails):
         hide_index = True,
     )
 
-
     return display_df
 
+
+@st.fragment
+def display_favorites_table_fragment(trails):
+    """Display and independently refresh the favorites table."""
+
+    favorites_df = favorite_trails_df(
+        trails,
+        st.session_state.favorites
+    )
+
+    display_df = display_favorite_trails_dataframe(
+        favorites_df
+    )
+
+    st.button(
+        "Refresh Favorites",
+        key="refresh_favorites_table"
+    )
+
+    return display_df
 
 def display_species_groups(observations):
     """Display top species within each supported taxon group."""
@@ -204,3 +228,21 @@ def display_metrics(trails):
         st.metric(
             label="Total Miles", 
             value=trails["ReportedLengthMiles"].sum().round(2))
+
+
+@st.fragment
+def favorite_button_display(trail_id):
+    is_favorite = (
+        trail_id
+        in st.session_state.favorites
+    )
+
+    if is_favorite:
+        if st.button("Remove Favorite"):
+            st.session_state.favorites.remove(trail_id)
+            st.rerun(scope="fragment")
+    
+    else:
+        if st.button("Add Favorite"):
+            st.session_state.favorites.append(trail_id)
+            st.rerun(scope="fragment")

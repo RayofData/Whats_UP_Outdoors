@@ -52,9 +52,10 @@ from src.streamlit_ui import (
     reset_selection,
     reset_search,
     display_trails_dataframe,
-    display_favorite_trails_dataframe,
+    display_favorites_table_fragment,
     display_species_groups,
     display_metrics,
+    favorite_button_display
 )
 
 # ==================================================
@@ -373,20 +374,7 @@ with tab3:
 
         fav_col, trail_col = st.columns([1,7])
         with fav_col:
-            is_favorite = (
-                st.session_state.selected_trail_id 
-                in st.session_state.favorites
-            )
-
-            if is_favorite:
-                if st.button("Remove Favorite"):
-                    st.session_state.favorites.remove(st.session_state.selected_trail_id)
-                    st.rerun()
-            
-            else:
-                if st.button("Add Favorite"):
-                    st.session_state.favorites.append(st.session_state.selected_trail_id)
-                    st.rerun()
+            favorite_button_display(st.session_state.selected_trail_id)
 
         with trail_col:
             display_trails_dataframe(
@@ -498,7 +486,8 @@ with tab4:
 
         map_html = favorites_map.get_root().render()
 
-        display_favorites_df = display_favorite_trails_dataframe(favorites_df)
+        display_favorites_df = display_favorites_table_fragment(trails)
+
 
     st.subheader("Trail Notes")
 
