@@ -7,6 +7,7 @@ from streamlit_folium import st_folium
 import geopandas as gpd 
 import pandas as pd
 import requests
+from datetime import datetime
 
 
 from src.trails import (
@@ -505,6 +506,16 @@ with tab4:
     )
     display_trails_dataframe(favorites_df)
 
+    timestamp= datetime.now().strftime("%Y-%m-%d_%H%M")
+    filename = f"trail_favorites_{timestamp}.csv"
+
+    st.download_button(
+        label = "Download Favorites",
+        data = favorites_df.to_csv(index = False),
+        file_name=filename,
+        mime="text/csv"
+    )
+    
 st.divider()
 
 st.caption(
