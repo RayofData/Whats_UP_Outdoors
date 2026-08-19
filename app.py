@@ -495,6 +495,9 @@ with tab4:
             width=1000,
             returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
         )
+
+        map_html = favorites_map.get_root().render()
+
         display_favorites_df = display_favorite_trails_dataframe(favorites_df)
 
     st.subheader("Trail Notes")
@@ -549,13 +552,23 @@ with tab4:
         }
     )
 
-    st.download_button(
-        label = "Download Favorites",
-        data = download_df.to_csv(index = False),
-        file_name=filename,
-        mime="text/csv"
-    )
-    
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.download_button(
+            label = "Download Favorites",
+            data = download_df.to_csv(index = False),
+            file_name=filename,
+            mime="text/csv"
+        )
+    with col2:
+        st.download_button(
+            label = "Download Trail Map",
+            data = map_html,
+            file_name = "trail_map.html",
+            mime = "text/html"
+        )
+
 st.divider()
 
 st.caption(

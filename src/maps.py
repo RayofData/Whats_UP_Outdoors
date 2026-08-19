@@ -51,6 +51,7 @@ def build_trail_map(trails, zip_point=None):
     trail_map = map_trails.explore(
         location = map_center,
         zoom_start=zoom_start,
+        tiles=None,
         tooltip=[
             "HikingName", 
             "County",
@@ -80,12 +81,19 @@ def build_trail_map(trails, zip_point=None):
             ]
         }
     )
+    
+    folium.TileLayer(
+        "OpenStreetMap",
+        referrer_policy="no-referrer-when-downgrade",
+    ).add_to(trail_map)
+
     if zip_point is not None:
         folium.Marker(
             location=[zip_point.y, zip_point.x]
         ).add_to(trail_map)
 
     return trail_map
+
 
 @st.fragment
 def build_observation_map(
