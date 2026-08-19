@@ -498,7 +498,7 @@ with tab4:
         "your saved favorites for later reference."
     )
 
-    favorites_df = favorite_trails_df(trails, st.session_state.favorites, st.session_state.favorites_notes)
+    favorites_df = favorite_trails_df(trails, st.session_state.favorites)
     favorites_map = build_trail_map(favorites_df)
 
     st_folium(
@@ -507,14 +507,63 @@ with tab4:
         width=1000,
         returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
     )
-    display_favorite_trails_dataframe(favorites_df)
+    display_favorites_df = display_favorite_trails_dataframe(favorites_df)
 
+    st.subheader("Trail Notes")
+
+    for _, trail in display_favorites_df.iterrows():
+        trail_id = trail["TrailGroupName"]
+
+        note = st.text_area(
+            trail["HikingName"],
+            value = st.session_state.favorites_notes.get(
+                trail_id,
+                ""
+        ),
+        key = f"favorite_note_{trail_id}",
+        placeholder = "Add notes about this trail..."
+    )
+
+        st.session_state.favorites_notes[trail_id] = note
+
+
+# ==================================================
+# Download Favorite Trails
+# ==================================================
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
     filename = f"trail_favorites_{timestamp}.csv"
 
+    download_df = display_favorites_df[
+        [
+            "HikingName",
+            "County",
+            "LengthCategory",
+            "ReportedLengthMiles",
+            "TrailWidth",
+            "SurfaceTypes",
+            "TaxonDensity",
+        ]
+    ].copy()
+
+    download_df["Notes"] = (
+        display_favorites_df["TrailGroupName"]
+        .map(st.session_state.favorites_notes)
+        .fillna("")
+    )
+
+    download_df = download_df.rename(
+        columns={
+            "HikingName": "Trail",
+            "ReportedLengthMiles": "Length (Miles)",
+            "TrailWidth": "Width",
+            "SurfaceTypes": "Surface",
+            "TaxonDensity": "Taxon Density",
+        }
+    )
+
     st.download_button(
         label = "Download Favorites",
-        data = favorites_df.to_csv(index = False),
+        data = download_df.to_csv(index = False),
         file_name=filename,
         mime="text/csv"
     )

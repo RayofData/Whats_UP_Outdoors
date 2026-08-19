@@ -270,7 +270,7 @@ def filter_trails(trails, length_categories, trail_name, surface_type):
     return filtered_trails
 
 
-def favorite_trails_df(trails, favorites_list, favorites_notes):
+def favorite_trails_df(trails, favorites_list):
     """Returns favorite trails list into a dataframe"""
 
     favorite_trails = (

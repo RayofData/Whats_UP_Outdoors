@@ -81,18 +81,23 @@ def display_favorite_trails_dataframe(trails):
     )
 
     display_df["TaxonDensity"] = (
-        "Birds: " + display_df["BirdsPerSqMile"].map("{:.2f}".format)
-        + " | Mammals: " + display_df["MammalsPerSqMile"].map("{:.2f}".format)
-        + " | Plants: " + display_df["PlantsPerSqMile"].map("{:.2f}".format)
-        + " | Fungi: " + display_df["FungiPerSqMile"].map("{:.2f}".format)
-        + " | Reptiles: " + display_df["ReptilesPerSqMile"].map("{:.2f}".format)
-        + " | Insects: " + display_df["InsectsPerSqMile"].map("{:.2f}".format)
+        display_df.apply(
+            lambda row: (
+                f"Birds: {row['BirdsPerSqMile']:.2f}"
+                f" | Mammals: {row['MammalsPerSqMile']:.2f}"
+                f" | Plants: {row['PlantsPerSqMile']:.2f}"
+                f" | Fungi: {row['FungiPerSqMile']:.2f}"
+                f" | Reptiles: {row['ReptilesPerSqMile']:.2f}"
+                f" | Insects: {row['InsectsPerSqMile']:.2f}"
+            ),
+            axis=1,
+        )
     )
 
-    display_df["Notes"] = ""
 
-    dataframe_options = {
-        "column_order": [
+    st.dataframe(
+        display_df,
+        column_order = [
             "HikingName",
             "County",
             "LengthCategory",
@@ -100,9 +105,8 @@ def display_favorite_trails_dataframe(trails):
             "TrailWidth",
             "SurfaceTypes",
             "TaxonDensity",
-            "Notes"
         ],
-        "column_config": {
+        column_config = {
             "HikingName": "Trail",
             "County": "County",
             "LengthCategory": "Length Category",
@@ -110,26 +114,12 @@ def display_favorite_trails_dataframe(trails):
             "TrailWidth": "Width",
             "SurfaceTypes": "Surface",
             "TaxonDensity": "Taxon Density",
-            "Notes": st.column_config.TextColumn(
-                "Notes",
-                help="Add personal notes about this trail.",
-                width="large",
-            ),
         },
-        "hide_index": True,
-    }
-
-
-    edited_df = st.data_editor(
-        display_df,
-        disabled=[
-            col for col in display_df.columns
-            if col != "Notes"
-        ],
-        **dataframe_options,
+        hide_index = True,
     )
 
-    return edited_df
+
+    return display_df
 
 
 def display_species_groups(observations):
