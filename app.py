@@ -10,7 +10,8 @@ import requests
 
 
 from src.trails import (
-    filter_trails
+    filter_trails,
+    favorite_trails_df
 )
 
 from src.locations import (
@@ -365,14 +366,33 @@ with tab3:
             f'in {selected_trail["County"].iloc[0]} County'
         )
 
-        display_trails_dataframe(
-            selected_trail,
-            selectable=False
-        )
+        fav_col, trail_col = st.columns([1,7])
+        with fav_col:
+            is_favorite = (
+                st.session_state.selected_trail_id 
+                in st.session_state.favorites
+            )
 
+            if is_favorite:
+                if st.button("Remove Favorite"):
+                    st.session_state.favorites.remove(st.session_state.selected_trail_id)
+                    st.rerun()
+            
+            else:
+                if st.button("Add Favorite"):
+                    st.session_state.favorites.append(st.session_state.selected_trail_id)
+                    st.rerun()
 
+        with trail_col:
+            display_trails_dataframe(
+                selected_trail,
+                selectable=False
+            )
+
+# ==================================================
+# iNaturalist API and Historical data
+# ==================================================
         buffer = create_trail_buffer(selected_trail)
-
         api_warning = "Recent observations unavailable."
         try: 
             trail_id = st.session_state.selected_trail_id
@@ -473,6 +493,17 @@ with tab4:
         "session. Use this list to quickly revisit trails you want to compare, or download "
         "your saved favorites for later reference."
     )
+
+    favorites_df = favorite_trails_df(trails, st.session_state.favorites)
+    favorites_map = build_trail_map(favorites_df)
+
+    st_folium(
+        favorites_map,
+        height=600,
+        width=1000,
+        returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
+    )
+    display_trails_dataframe(favorites_df)
 
 st.divider()
 

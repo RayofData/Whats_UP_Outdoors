@@ -28,6 +28,10 @@ def reset_search():
      
 def display_trails_dataframe(trails, selectable=False):
     """Display trail data with readable Streamlit column formatting."""
+    display_df = pd.DataFrame(
+        trails.drop(columns="geometry", errors="ignore")
+    )
+
     dataframe_options = {
         "column_order": [
             "HikingName",
@@ -66,7 +70,7 @@ def display_trails_dataframe(trails, selectable=False):
         })
 
     return st.dataframe(
-        trails,
+        display_df,
         **dataframe_options,
     )
 

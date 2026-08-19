@@ -268,3 +268,17 @@ def filter_trails(trails, length_categories, trail_name, surface_type):
             )
         ]
     return filtered_trails
+
+
+
+
+def favorite_trails_df(trails, favorites_list):
+    """Returns favorite trails list into a dataframe"""
+    return (
+        trails
+        .set_index("TrailGroupName")
+        .loc[favorites_list]
+        .reset_index()
+    )
+
+
