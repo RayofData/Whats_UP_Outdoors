@@ -52,10 +52,12 @@ from src.streamlit_ui import (
     reset_selection,
     reset_search,
     display_trails_dataframe,
-    display_favorites_table_fragment,
+    display_favorite_trails_dataframe,
     display_species_groups,
     display_metrics,
-    favorite_button_display
+    favorite_button_display,
+    add_taxon_density_display_column,
+    display_favorites_section
 )
 
 # ==================================================
@@ -472,7 +474,10 @@ with tab4:
         "favorite trails as a CSV for later reference."
     )
 
-    favorites_df = favorite_trails_df(trails, st.session_state.favorites)
+    favorites_df = favorite_trails_df(
+        trails, 
+        st.session_state.favorites
+    )
 
     with st.spinner("Loading trail map...", show_time=True):
         favorites_map = build_trail_map(favorites_df)
@@ -486,25 +491,11 @@ with tab4:
 
         map_html = favorites_map.get_root().render()
 
-        display_favorites_df = display_favorites_table_fragment(trails)
+
+    display_favorites_section(trails)
 
 
-    st.subheader("Trail Notes")
 
-    for _, trail in display_favorites_df.iterrows():
-        trail_id = trail["TrailGroupName"]
-
-        note = st.text_area(
-            trail["HikingName"],
-            value = st.session_state.favorites_notes.get(
-                trail_id,
-                ""
-        ),
-        key = f"favorite_note_{trail_id}",
-        placeholder = "Add notes about this trail..."
-    )
-
-        st.session_state.favorites_notes[trail_id] = note
 
 
 # ==================================================
@@ -513,7 +504,18 @@ with tab4:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
     filename = f"trail_favorites_{timestamp}.csv"
 
-    download_df = display_favorites_df[
+    download_df = add_taxon_density_display_column(
+        favorites_df.drop(columns="geometry", errors="ignore")
+    )
+
+    download_df["Notes"] = (
+        download_df["TrailGroupName"]
+        .map(st.session_state.favorites_notes)
+        .fillna("")
+    )
+
+
+    download_df = download_df[
         [
             "HikingName",
             "County",
@@ -522,16 +524,9 @@ with tab4:
             "TrailWidth",
             "SurfaceTypes",
             "TaxonDensity",
+            "Notes",
         ]
-    ].copy()
-
-    download_df["Notes"] = (
-        display_favorites_df["TrailGroupName"]
-        .map(st.session_state.favorites_notes)
-        .fillna("")
-    )
-
-    download_df = download_df.rename(
+    ].rename(
         columns={
             "HikingName": "Trail",
             "ReportedLengthMiles": "Length (Miles)",

@@ -79,27 +79,35 @@ def display_trails_dataframe(trails, selectable=False):
     )
 
 
-def display_favorite_trails_dataframe(trails):
-    """Display favorite trail data with an editable notes column."""
-    display_df = pd.DataFrame(
-        trails.drop(columns="geometry", errors="ignore")
-    )
+def add_taxon_density_display_column(trails):
+    """Add a formatted taxon-density summary column."""
+    display_df = trails.copy()
 
     display_df["TaxonDensity"] = (
         display_df.apply(
             lambda row: (
-                f"Birds: {row['BirdsPerSqMile']:.2f}"
-                f" | Mammals: {row['MammalsPerSqMile']:.2f}"
-                f" | Plants: {row['PlantsPerSqMile']:.2f}"
-                f" | Fungi: {row['FungiPerSqMile']:.2f}"
-                f" | Reptiles: {row['ReptilesPerSqMile']:.2f}"
-                f" | Insects: {row['InsectsPerSqMile']:.2f}"
+                f"Birds: {row['BirdsPerSqMile']:.1f}"
+                f" | Mammals: {row['MammalsPerSqMile']:.1f}"
+                f" | Plants: {row['PlantsPerSqMile']:.1f}"
+                f" | Fungi: {row['FungiPerSqMile']:.1f}"
+                f" | Reptiles: {row['ReptilesPerSqMile']:.1f}"
+                f" | Insects: {row['InsectsPerSqMile']:.1f}"
             ),
             axis=1,
         )
     )
 
+    return display_df
 
+
+def display_favorite_trails_dataframe(trails):
+    """Display favorite trail data with taxon density."""
+    display_df = pd.DataFrame(
+        trails.drop(columns="geometry", errors="ignore")
+    )
+
+    display_df = add_taxon_density_display_column(display_df)
+    
     st.dataframe(
         display_df,
         column_order = [
@@ -127,8 +135,8 @@ def display_favorite_trails_dataframe(trails):
 
 
 @st.fragment
-def display_favorites_table_fragment(trails):
-    """Display and independently refresh the favorites table."""
+def display_favorites_section(trails):
+    """Display and refresh favorite trails and session notes."""
 
     favorites_df = favorite_trails_df(
         trails,
@@ -141,10 +149,30 @@ def display_favorites_table_fragment(trails):
 
     st.button(
         "Refresh Favorites",
-        key="refresh_favorites_table"
+        key = "refresh_favorites"
     )
 
-    return display_df
+    if display_df.empty:
+        st.info("No favorite trails saved yet.")
+        return
+
+    st.subheader("Trail Notes")
+
+    for _, trail in display_df.iterrows():
+        trail_id = trail["TrailGroupName"]
+
+        note = st.text_area(
+            trail["HikingName"],
+            value = st.session_state.favorites_notes.get(
+                trail_id,
+                ""
+            ),
+            key = f"favorite_note_{trail_id}",
+            placeholder = f"Add notes about {trail['HikingName']}"
+        )
+
+        st.session_state.favorites_notes[trail_id] = note
+
 
 def display_species_groups(observations):
     """Display top species within each supported taxon group."""
