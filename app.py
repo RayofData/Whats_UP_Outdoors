@@ -7,10 +7,12 @@ from streamlit_folium import st_folium
 import geopandas as gpd 
 import pandas as pd
 import requests
+from datetime import datetime
 
 
 from src.trails import (
-    filter_trails
+    filter_trails,
+    favorite_trails_df
 )
 
 from src.locations import (
@@ -25,11 +27,12 @@ from src.spatial import (
     create_trail_buffer
 )
 from src.spatial import (
-    filter_observations_near_trail
+    filter_observations_near_trail,
+    add_taxon_density_to_trails
 )
 from src.maps import (
     build_trail_map,
-    build_observation_map
+    display_observation_map_fragment
 )
 from src.inaturalist import (
     OBSERVATION_DISPLAY_COLUMNS,
@@ -41,6 +44,7 @@ from src.inaturalist import (
     limit_observations
 )
 from src.apis.inaturalist_api import (
+    DAYS_RETRIEVED,
     fetch_recent_observations
 )
 
@@ -48,8 +52,12 @@ from src.streamlit_ui import (
     reset_selection,
     reset_search,
     display_trails_dataframe,
+    display_favorite_trails_dataframe,
     display_species_groups,
     display_metrics,
+    favorite_button_display,
+    add_taxon_density_display_column,
+    display_favorites_section
 )
 
 # ==================================================
@@ -77,19 +85,25 @@ st.set_page_config(
 # ==================================================
 # Load Data
 # ==================================================
-@st.cache_data
+@st.cache_data(show_spinner="Loading trail data...", show_time=True)
 def load_trails(): 
     return gpd.read_parquet(PROCESSED_PATH_TRAILS)
 
 trails = load_trails()
 
-@st.cache_data
+@st.cache_data(show_spinner="Loading historical iNaturalist observations...", show_time=True)
 def load_historical_observations():
     observations = pd.read_parquet(PROCESSED_PATH_OBS)
     
     return convert_to_geodataframe(observations)
 
 historical_observations = load_historical_observations()
+
+@st.cache_data(show_spinner="Preparing trail and historical observation data...", show_time=True)
+def add_historical_taxon_counts(_trails, _historical_observations):
+    return add_taxon_density_to_trails(trails, historical_observations)
+
+trails = add_historical_taxon_counts(trails, historical_observations)
 
 # ==================================================
 # Session States
@@ -106,6 +120,8 @@ if "recent_observations" not in st.session_state:
 if "favorites" not in st.session_state:
     st.session_state.favorites = []
 
+if "favorites_notes" not in st.session_state:
+    st.session_state.favorites_notes = {}
 
 length_categories = []
 trail_name = ""
@@ -187,9 +203,11 @@ st.image(BANNER_PATH)
 st.subheader(f"How to use {TITLE}: ")
 
 st.write(
-    "Browse trails across Michigan’s Upper Peninsula, narrow the list by length "
-    "or trail name, and select a trail to see more details and nearby iNaturalist "
-    "observations. Looking for trails near you? Use the ZIP code search in the sidebar."
+    "Browse hiking trails across Michigan’s Upper Peninsula, narrow the results "
+    "using trail filters or a ZIP code search, and select a trail to explore detailed "
+    "trail information and nearby iNaturalist observations. Use the tabs below to "
+    "compare trails in a table, explore them on an interactive map, view details for "
+    "a selected trail, or manage your saved favorite trails."
 )
 
 st.divider()
@@ -253,7 +271,15 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # Tab 1: Trails table
 # ==================================================
 with tab1:
-    
+    st.header("Browse & Filter Trails")
+
+    st.markdown(
+        "Compare the trails that match your current search and filters. "
+        "Select a trail from the table to view its details and nearby "
+        "iNaturalist observations in the third tab."
+    )
+
+
     if filtered_trails.empty:
         st.info("No trails match the current filters.")
 
@@ -293,17 +319,35 @@ if st.session_state.selected_trail_id is not None:
 # ==================================================
 # Tab 2: Map
 # ==================================================
-with tab2: 
-    trail_map = build_trail_map(
-        filtered_trails,
-        zip_point
+with tab2:
+    st.header("Explore Trails on Map")
+
+    st.markdown(
+        "View the trails that match your current search and filters on an "
+        "interactive map. Hover over a trail for its name and county, or click "
+        "it to view additional trail information."
     )
 
-    st_folium(trail_map, height=600, width=1000, returned_objects=[])
+    with st.spinner("Loading trail map...", show_time=True):
+        trail_map = build_trail_map(
+            filtered_trails,
+            zip_point
+        )
+
+        st_folium(
+            trail_map,
+            height=600,
+            width=1000,
+            returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
+        )
 
     st.divider()
 
+
     display_metrics(filtered_trails)
+    st.caption(
+        "Summary metrics reflect the trails currently displayed on the map."
+    )
 
 # ==================================================
 # Tab 3: Specific Trail details
@@ -311,98 +355,94 @@ with tab2:
 with tab3:
     if selected_trail is not None:
 
+        st.header("Selected Trail Details")
+        st.subheader("iNaturalist Observations")
+
+        st.markdown(
+            "Explore iNaturalist observations reported within "
+            f"two miles of the {st.session_state.selected_trail_id}. "
+            f"**Recent observations** cover the last {DAYS_RETRIEVED} days, while "
+            "**historical observations** cover September & October from 2015–2025. Use the map "
+            "filter to view all supported taxon groups or focus on a single group. "
+            "Recent observations are retrieved when a trail is first selected, "
+            "so the initial load may take a moment on large trails. Repeat views "
+            "of the same trail are faster during the current session. "
+            "[Learn more about iNaturalist](https://www.inaturalist.org/)."
+        )
         st.subheader(
             f'Trail: {selected_trail["HikingName"].iloc[0]} '
             f'in {selected_trail["County"].iloc[0]} County'
         )
 
-        display_trails_dataframe(
-            selected_trail,
-            selectable=False
-        )
+        fav_col, trail_col = st.columns([1,7])
+        with fav_col:
+            favorite_button_display(st.session_state.selected_trail_id)
 
-        buffer = create_trail_buffer(selected_trail)
-
-        st.header("iNaturalist Observations")
-
-        st.markdown(
-            "Explore recent and historical sightings reported within two miles of the "
-            "selected trail using data from [iNaturalist](https://www.inaturalist.org/). "
-            "Recent observations are retrieved when a trail is first selected, so the initial "
-            "load may take a few moments, especially for trails with many observations. "
-            "Repeat views of the same trail are faster during the current session."
-        )
-
-        api_warning = "Recent observations unavailable."
-        try: 
-            trail_id = st.session_state.selected_trail_id
-
-            if trail_id not in st.session_state.recent_observations:
-
-                api_observations = fetch_recent_observations(buffer)
-                
-                normalized_observations = normalize_recent_observations(api_observations)
-
-                filtered_api_observations = filter_observations_near_trail(
-                    selected_trail,
-                    normalized_observations
-                )
-
-                st.session_state.recent_observations[
-                    trail_id
-                ] = filtered_api_observations
-
-            filtered_api_observations = st.session_state.recent_observations[trail_id]
-
-
-        except requests.exceptions.RequestException:
-            st.warning(api_warning)
-        except requests.exceptions.HTTPError: 
-            st.warning(api_warning)
-        except requests.exceptions.ConnectionError:
-            st.warning(api_warning)
-        except requests.ReadTimeout:
-            st.warning(api_warning)
-
-        filtered_historical_observations = (
-            filter_observations_near_trail(
-                selected_trail, 
-                historical_observations
+        with trail_col:
+            display_trails_dataframe(
+                selected_trail,
+                selectable=False
             )
-        )
+
+# ==================================================
+# iNaturalist API and Historical data
+# ==================================================
+        buffer = create_trail_buffer(selected_trail)
+        api_warning = "Recent observations unavailable."
+        
+        with st.spinner("Loading recent observations...", show_time=True):
+            try: 
+                trail_id = st.session_state.selected_trail_id
+
+                if trail_id not in st.session_state.recent_observations:
+
+                    api_observations = fetch_recent_observations(buffer)
+                    
+                    normalized_observations = normalize_recent_observations(api_observations)
+
+                    filtered_api_observations = filter_observations_near_trail(
+                        selected_trail,
+                        normalized_observations
+                    )
+
+                    st.session_state.recent_observations[
+                        trail_id
+                    ] = filtered_api_observations
+
+                filtered_api_observations = st.session_state.recent_observations[trail_id]
+
+
+            except requests.exceptions.RequestException:
+                st.warning(api_warning)
+            except requests.exceptions.HTTPError: 
+                st.warning(api_warning)
+            except requests.exceptions.ConnectionError:
+                st.warning(api_warning)
+            except requests.ReadTimeout:
+                st.warning(api_warning)
+
+            filtered_historical_observations = (
+                filter_observations_near_trail(
+                    selected_trail, 
+                    historical_observations
+                )
+            )
         
         limited_api_observations = limit_observations(filtered_api_observations)
         limited_hist_observations = limit_observations(filtered_historical_observations)
 
-
-        taxon_filter = st.radio(
-            "Select which observation types show on map.",
-            options=[
-                "All",
-                *TAXON_GROUPS.keys(),
-                "None"
-            ],
-            horizontal=True
+        display_observation_map_fragment(
+            selected_trail, 
+            limited_api_observations,
+            limited_hist_observations, 
+            filtered_historical_observations
         )
-        observation_map = build_observation_map(
-            selected_trail,
-            limited_api_observations, 
-            limited_hist_observations,
-            taxon_filter
-        )
-
-        st_folium(
-            observation_map,
-            height=600,
-            width=1000,
-            returned_objects=[]
-        )
-
+        
         recent_col, historical_col = st.columns(2)
 
         with recent_col:
             st.subheader(
-                "Recent Observations: Last 21 Days"
+                f"Recent Observations: Last {DAYS_RETRIEVED} Days"
             )
             display_species_groups(
                 limited_api_observations
@@ -425,4 +465,44 @@ with tab3:
 # Tab 4: Favorite Trails
 # ==================================================
 with tab4:
-    st.write("Favorites Coming Soon")
+    st.header("Saved Favorite Trails")
+
+    st.markdown(
+        "View the trails you have saved as favorites during the current "
+        "session. Add personal notes for each trail to help with comparison and trip planning. "
+        "Notes are saved for the current session and are included when you download your "
+        "favorite trails as a CSV for later reference."
+    )
+
+    favorites_df = favorite_trails_df(
+        trails, 
+        st.session_state.favorites
+    )
+
+
+
+
+    display_favorites_section(trails)
+
+
+
+
+
+# ==================================================
+# Download Favorite Trails
+# ==================================================
+
+
+st.divider()
+
+st.caption(
+    "Originally built while planning a fall-color trip through Michigan’s Upper Peninsula. "
+    "What’s UP Outdoors combines trail information with nearby nature observations to help "
+    "explore possible hiking destinations."
+)
+
+st.markdown(
+    "Built by [Ray Hobbs](https://github.com/RayofData) · "
+    "[GitHub](https://github.com/RayofData/Whats_UP_Outdoors) · "
+    "[LinkedIn](https://www.linkedin.com/in/ray-hobbs/)"
+)
