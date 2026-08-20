@@ -56,8 +56,12 @@ from src.streamlit_ui import (
     display_species_groups,
     display_metrics,
     favorite_button_display,
+    display_favorites_map,
+    select_favorite_for_details,
+    remove_favorite,
+    add_notes_button,
+    download_button,
     add_taxon_density_display_column,
-    display_favorites_section
 )
 
 # ==================================================
@@ -122,6 +126,9 @@ if "favorites" not in st.session_state:
 
 if "favorites_notes" not in st.session_state:
     st.session_state.favorites_notes = {}
+
+if "favorite_selection_version" not in st.session_state:
+    st.session_state.favorite_selection_version = 0
 
 length_categories = []
 trail_name = ""
@@ -204,10 +211,10 @@ st.subheader(f"How to use {TITLE}: ")
 
 st.write(
     "Browse hiking trails across Michigan’s Upper Peninsula, narrow the results "
-    "using trail filters or a ZIP code search, and select a trail to explore detailed "
+    "with trail filters or a ZIP code search, and select a trail to explore detailed "
     "trail information and nearby iNaturalist observations. Use the tabs below to "
-    "compare trails in a table, explore them on an interactive map, view details for "
-    "a selected trail, or manage your saved favorite trails."
+    "compare trails, explore them on a map, view a selected trail, and manage your "
+    "saved favorites and trail notes."
 )
 
 st.divider()
@@ -274,9 +281,9 @@ with tab1:
     st.header("Browse & Filter Trails")
 
     st.markdown(
-        "Compare the trails that match your current search and filters. "
-        "Select a trail from the table to view its details and nearby "
-        "iNaturalist observations in the third tab."
+        "Compare trails that match your current search and filters. Select a trail "
+        "from the table, then open the Selected Trail Details tab to view trail "
+        "information and nearby iNaturalist observations."
     )
 
 
@@ -358,15 +365,16 @@ with tab3:
         st.header("Selected Trail Details")
         st.subheader("iNaturalist Observations")
 
+        trail_name = selected_trail["HikingName"].iloc[0]
+
         st.markdown(
             "Explore iNaturalist observations reported within "
-            f"two miles of the {st.session_state.selected_trail_id}. "
-            f"**Recent observations** cover the last {DAYS_RETRIEVED} days, while "
-            "**historical observations** cover September & October from 2015–2025. Use the map "
-            "filter to view all supported taxon groups or focus on a single group. "
-            "Recent observations are retrieved when a trail is first selected, "
-            "so the initial load may take a moment on large trails. Repeat views "
-            "of the same trail are faster during the current session. "
+            f"two miles of **{trail_name}**. "
+            f"**Recent observations** cover the previous {DAYS_RETRIEVED} days, while "
+            "**historical observations** cover September–October from 2015–2025. "
+            "Use the map filter to view all supported taxon groups or focus on a single group. "
+            "Recent observations are retrieved the first time a trail is selected, so the "
+            "initial load may take longer than repeat views during the current session. "
             "[Learn more about iNaturalist](https://www.inaturalist.org/)."
         )
         st.subheader(
@@ -389,6 +397,7 @@ with tab3:
 # ==================================================
         buffer = create_trail_buffer(selected_trail)
         api_warning = "Recent observations unavailable."
+        filtered_api_observations = pd.DataFrame()
         
         with st.spinner("Loading recent observations...", show_time=True):
             try: 
@@ -427,8 +436,11 @@ with tab3:
                     historical_observations
                 )
             )
-        
-        limited_api_observations = limit_observations(filtered_api_observations)
+        if not filtered_api_observations.empty:
+            limited_api_observations = limit_observations(filtered_api_observations)
+        else:
+            limited_api_observations = filtered_api_observations
+
         limited_hist_observations = limit_observations(filtered_historical_observations)
 
         display_observation_map_fragment(
@@ -458,7 +470,8 @@ with tab3:
 
     else:
         st.info(
-            "Click on a trail in tab 1 to see details."
+            "Select a trail from Browse & Filter Trails or choose a saved favorite "
+            "to view its details."
         )
 
 # ==================================================
@@ -468,10 +481,11 @@ with tab4:
     st.header("Saved Favorite Trails")
 
     st.markdown(
-        "View the trails you have saved as favorites during the current "
-        "session. Add personal notes for each trail to help with comparison and trip planning. "
-        "Notes are saved for the current session and are included when you download your "
-        "favorite trails as a CSV for later reference."
+        "View the trails you have saved as favorites during the current session. "
+        "Select a trail from the table to add or edit a note, remove it from your "
+        "favorites, or set it as the selected trail for the Trail Details tab. "
+        "Notes are stored for the current session and included when you download "
+        "your favorites as a CSV."
     )
 
     favorites_df = favorite_trails_df(
@@ -479,20 +493,35 @@ with tab4:
         st.session_state.favorites
     )
 
+    display_favorites_map(trails)
 
+    
+    selected_favorite = display_favorite_trails_dataframe(
+        favorites_df
+    )
 
+    col1, col2 = st.columns(2)
 
-    display_favorites_section(trails)
+    with col1:
+        select_favorite_for_details(selected_favorite)
+        add_notes_button(trails, selected_favorite)
 
+    with col2:
+        remove_favorite(selected_favorite)  
+        download_button(trails)
 
-
+    with st.expander("View All Notes"):
+        if st.session_state.favorites_notes.items():
+            for trail_id, note in st.session_state.favorites_notes.items():
+                st.subheader(trail_id)
+                st.write(note)
+        else:
+            st.info("No trail notes saved yet.")
 
 
 # ==================================================
 # Download Favorite Trails
 # ==================================================
-
-
 st.divider()
 
 st.caption(
