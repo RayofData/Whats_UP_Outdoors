@@ -114,7 +114,7 @@ def display_favorite_trails_dataframe(trails):
 
     display_df = add_taxon_density_display_column(display_df)
 
-    st.dataframe(
+    event = st.dataframe(
         display_df,
         column_order = [
             "HikingName",
@@ -135,18 +135,24 @@ def display_favorite_trails_dataframe(trails):
             "TaxonDensity": "Taxon Density",
         },
         hide_index = True,
-    )
+        on_select = "rerun",
+        selection_mode = "single-row",
+        key = f"favorite_trail_selection_{st.session_state.favorite_selection_version}",
+        )
 
-    return display_df
+    if event.selection.rows:
+        row_idx = event.selection.rows[0]
+
+        return display_df.iloc[row_idx]["TrailGroupName"]
+
+    if display_df.empty:
+        st.info("No favorite trails saved yet.")
+
+    return None
 
 
-@st.fragment
-def display_favorites_section(trails):
-    """Display and refresh favorite trails and session notes."""
-    st.button(
-        "Refresh Favorites",
-        key = "refresh_favorites"
-    )
+def display_favorites_map(trails):
+    """Display favorite trails on map with download button."""
 
     favorites_df = favorite_trails_df(
         trails,
@@ -172,36 +178,52 @@ def display_favorites_section(trails):
         mime = "text/html"
     )
 
-    display_df = display_favorite_trails_dataframe(
-        favorites_df
+
+def remove_favorite(trail_id):
+    """Button to remove selected trail from favorites."""
+    if st.button("Remove Selected Favorite", disabled=trail_id is None):
+        st.session_state.favorites.remove(trail_id)
+        st.session_state.favorite_selection_version += 1
+        st.rerun()
+
+
+@st.dialog("Trail Note")
+def trail_note_dialog(trails, trail_id):
+    """Display a note editor for the selected favorite trail."""
+
+    trail = trails.loc[trails["TrailGroupName"] == trail_id].iloc[0]
+
+    note = st.text_area(
+        f"Notes for {trail_id}",
+        value = st.session_state.favorites_notes.get(
+            trail_id,
+            ""
+        ),
+        key = f"favorite_note_{trail_id}",
+        placeholder = f"Add notes about {trail_id}"
     )
 
-    if display_df.empty:
-        st.info("No favorite trails saved yet.")
-        return
-
-    st.subheader("Trail Notes")
-    st.info(
-        "Add or edit notes in the text areas below. Press Ctrl+Enter or Command+Enter "
-        "to save each note. Notes are stored for the current session and included in "
-        "the Favorites CSV download. After saving your changes, use Download Favorites "
-        "to export the latest trail details and notes."
-    )
-
-    for _, trail in display_df.iterrows():
-        trail_id = trail["TrailGroupName"]
-
-        note = st.text_area(
-            trail["HikingName"],
-            value = st.session_state.favorites_notes.get(
-                trail_id,
-                ""
-            ),
-            key = f"favorite_note_{trail_id}",
-            placeholder = f"Add notes about {trail['HikingName']}"
-        )
-
+    if st.button("Save Note"):
         st.session_state.favorites_notes[trail_id] = note
+        st.rerun()
+
+
+def add_notes_button(trails, trail_id):
+    """Open the note dialog for the selected favorite trail."""
+
+    if st.button(
+        "Add/Edit Trail Note",
+        disabled=trail_id is None
+    ):
+        trail_note_dialog(trails, trail_id)
+
+
+def download_button(trails):
+    """Converts favorites into a dataframe with notes and download as csv."""
+    favorites_df = favorite_trails_df(
+        trails,
+        st.session_state.favorites
+    )
 
     download_df = add_taxon_density_display_column(
         favorites_df.drop(
@@ -295,6 +317,7 @@ def display_species_groups(observations):
             with date_col:
                 st.write(row["most_recent"].strftime("%Y-%m-%d"))
 
+
 def display_metrics(trails):
     """Display summary metrics for the currently displayed trails."""
     st.subheader("Metrics")
@@ -336,7 +359,6 @@ def display_metrics(trails):
             value=trails["ReportedLengthMiles"].sum().round(2))
 
 
-@st.fragment
 def favorite_button_display(trail_id):
     is_favorite = (
         trail_id
@@ -346,9 +368,9 @@ def favorite_button_display(trail_id):
     if is_favorite:
         if st.button("Remove Favorite"):
             st.session_state.favorites.remove(trail_id)
-            st.rerun(scope="fragment")
+            st.rerun()
     
     else:
         if st.button("Add Favorite"):
             st.session_state.favorites.append(trail_id)
-            st.rerun(scope="fragment")
+            st.rerun()

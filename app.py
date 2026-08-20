@@ -55,8 +55,11 @@ from src.streamlit_ui import (
     display_species_groups,
     display_metrics,
     favorite_button_display,
+    display_favorites_map,
+    remove_favorite,
+    add_notes_button,
+    download_button,
     add_taxon_density_display_column,
-    display_favorites_section
 )
 
 from src.ai import (
@@ -527,20 +530,29 @@ with tab5:
         st.session_state.favorites
     )
 
+    display_favorites_map(trails)
 
+    
+    selected_favorite = display_favorite_trails_dataframe(
+        favorites_df
+    )
 
+    notes_col, manage_col = st.columns(2)
 
-    display_favorites_section(trails)
+    with notes_col:
+        add_notes_button(trails, selected_favorite)
+        notes_button = st.button("View All Notes")
+        if notes_button:
+            st.write(st.session_state.favorites_notes)
 
-
-
+    with manage_col:
+        remove_favorite(selected_favorite)  
+        download_button(trails)
 
 
 # ==================================================
 # Download Favorite Trails
 # ==================================================
-
-
 st.divider()
 
 st.caption(
