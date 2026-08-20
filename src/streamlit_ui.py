@@ -179,6 +179,15 @@ def display_favorites_map(trails):
     )
 
 
+def select_favorite_for_details(trail_id):
+    """Set the selected favorite trail as the active trail for details."""
+    if st.button("View Trail Details", disabled=trail_id is None):
+        st.session_state.search_version += 1
+        st.session_state.selected_trail_id = trail_id
+
+        st.rerun()
+
+
 def remove_favorite(trail_id):
     """Button to remove selected trail from favorites."""
     if st.button("Remove Selected Favorite", disabled=trail_id is None):
@@ -270,8 +279,6 @@ def download_button(trails):
         file_name=filename,
         mime="text/csv"
     )
-
-
 
 
 def display_species_groups(observations):

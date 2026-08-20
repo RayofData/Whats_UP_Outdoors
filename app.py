@@ -57,6 +57,7 @@ from src.streamlit_ui import (
     display_metrics,
     favorite_button_display,
     display_favorites_map,
+    select_favorite_for_details,
     remove_favorite,
     add_notes_button,
     download_button,
@@ -474,10 +475,10 @@ with tab4:
     st.header("Saved Favorite Trails")
 
     st.markdown(
-        "View the trails you have saved as favorites during the current "
-        "session. Add personal notes for each trail to help with comparison and trip planning. "
-        "Notes are saved for the current session and are included when you download your "
-        "favorite trails as a CSV for later reference."
+        "View the trails you have saved as favorites during the current session. "
+        "Select a favorite trail from the table to view its details, remove it from "
+        "your favorites, or add and edit a personal note. Notes are saved for the "
+        "current session and included when you download your favorite trails as a CSV."
     )
 
     favorites_df = favorite_trails_df(
@@ -497,12 +498,17 @@ with tab4:
     with notes_col:
         add_notes_button(trails, selected_favorite)
         notes_button = st.button("View All Notes")
-        if notes_button:
-            st.write(st.session_state.favorites_notes)
+
 
     with manage_col:
+        select_favorite_for_details(selected_favorite)
         remove_favorite(selected_favorite)  
         download_button(trails)
+
+    if notes_button:
+        for key, value in st.session_state.favorites_notes.items():
+            st.subheader(key)
+            st.write(value)
 
 
 # ==================================================
