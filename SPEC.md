@@ -275,7 +275,11 @@ For the selected trail, display:
 - historical species summaries
 - add/remove favorite control
 
-### Tab 4: Favorite Trails
+### Tab 4: AI Overview
+
+
+
+### Tab 5: Favorite Trails
 
 If no trails saved to favorite, display message favorites can be saved from trail details tab. 
 

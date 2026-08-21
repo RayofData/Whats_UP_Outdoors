@@ -7,7 +7,6 @@ from streamlit_folium import st_folium
 import geopandas as gpd 
 import pandas as pd
 import requests
-from datetime import datetime
 
 
 from src.trails import (
@@ -16,17 +15,13 @@ from src.trails import (
 )
 
 from src.locations import (
-    normalize_zipcode, 
     zip_to_point,
     get_zip_info
 )
 from src.spatial import (
     find_nearby_trails, 
     distance_to_trails,
-    distances_to_trail,
-    create_trail_buffer
-)
-from src.spatial import (
+    create_trail_buffer,
     filter_observations_near_trail,
     add_taxon_density_to_trails
 )
@@ -35,10 +30,7 @@ from src.maps import (
     display_observation_map_fragment
 )
 from src.inaturalist import (
-    OBSERVATION_DISPLAY_COLUMNS,
-    TAXON_GROUPS,
     convert_to_geodataframe,
-    split_observations_by_taxon,
     normalize_recent_observations,
     limit_observations
 )
@@ -60,7 +52,6 @@ from src.streamlit_ui import (
     remove_favorite,
     add_notes_button,
     download_button,
-    add_taxon_density_display_column,
 )
 
 from src.ai import (
@@ -109,7 +100,7 @@ historical_observations = load_historical_observations()
 
 @st.cache_data(show_spinner="Preparing trail and historical observation data...", show_time=True)
 def add_historical_taxon_counts(_trails, _historical_observations):
-    return add_taxon_density_to_trails(trails, historical_observations)
+    return add_taxon_density_to_trails(_trails, _historical_observations)
 
 trails = add_historical_taxon_counts(trails, historical_observations)
 
@@ -278,7 +269,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     ":hiking_boot: **Browse & Filter Trails**",
     ":round_pushpin: **Explore Trails Map**",
     ":eagle: **Selected Trail Observations Details**",
-    ":sparkles: **AI Trail Summary & Current Info**",
+    ":sparkles: **AI Trail Summary**",
     ":star: **Saved Favorite Trails**",
 ])
 
@@ -404,6 +395,8 @@ with tab3:
 # ==================================================
         buffer = create_trail_buffer(selected_trail)
         api_warning = "Recent observations unavailable."
+
+        filtered_api_observations = historical_observations.iloc[0:0].copy()
         
         with st.spinner("Loading recent observations...", show_time=True):
             try: 
@@ -429,12 +422,7 @@ with tab3:
 
             except requests.exceptions.RequestException:
                 st.warning(api_warning)
-            except requests.exceptions.HTTPError: 
-                st.warning(api_warning)
-            except requests.exceptions.ConnectionError:
-                st.warning(api_warning)
-            except requests.ReadTimeout:
-                st.warning(api_warning)
+
 
             filtered_historical_observations = (
                 filter_observations_near_trail(
@@ -477,18 +465,16 @@ with tab3:
         )
 
 # ==================================================
-# Tab 4: AI Trail Summary & Current Info
+# Tab 4: AI Trail Summary
 # ==================================================
 with tab4:
-    st.header("AI Trail Summary & Current Info")
+    st.header("AI Trail Summary")
 
     st.markdown(
         """
-        Explore an AI-generated overview of the selected trail using its trail details,
+        Generate an AI overview of the selected trail using its trail details,
         recent iNaturalist observations, and historical observation patterns.
-
-        This section can also surface current trail information and nearby parking to
-        help you get a more complete picture before your visit.
+        Overviews are saved for downloaded favorites.
         """
     )
 

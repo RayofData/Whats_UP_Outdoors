@@ -1,4 +1,4 @@
-"""Build and cache AI-generate trail information."""
+"""Build and cache AI-generated trail information."""
 
 import json
 
@@ -80,11 +80,12 @@ def build_trail_ai_data(selected_trail, recent_observations):
 def _generate_trail_summary(trail_data):
     """Return a natural-language summary of the supplied trail details."""
     prompt = f"""
-    Write a short, natural hiking trail overview using only the supplied trail data.
+    Write a short, natural hiking trail overview using the supplied trail data.
 
-    You may use general knowledge to interpret listed species, but do not invent
-    species or trail facts. Treat iNaturalist observations as reported sightings
-    near the trail, not guaranteed encounters.
+    Use only the supplied data for trail-specific facts and reported observations.
+    You may use general knowledge to briefly interpret listed species, but do not
+    invent species, observations, conditions, or trail facts. Treat iNaturalist
+    observations as reported sightings near the trail, not guaranteed encounters.
 
     Highlight only a few notable species across the data, especially fall-color
     plants, interesting fungi and birds, and mammals that are notable or may
@@ -93,6 +94,7 @@ def _generate_trail_summary(trail_data):
     Trail data:
     {json.dumps(trail_data, indent=2)}
     """
+
 
     return generate_text(prompt)
 
