@@ -492,7 +492,12 @@ with tab4:
         """
     )
 
-    if selected_trail is not None:
+    if selected_trail is None:
+        st.info(
+            "Click on a trail in tab 1 to see details."
+        )
+    
+    else:
         trail_data = build_trail_ai_data(selected_trail, limited_api_observations)
         
         if  st.button("Generate AI Overview"):
@@ -509,12 +514,6 @@ with tab4:
         if saved_summary:
             st.subheader(f"AI Overview for {st.session_state.selected_trail_id}")
             st.write(saved_summary)
-
-    else:
-        st.info(
-            "Click on a trail in tab 1 to see details."
-        )
-
 
 # ==================================================
 # Tab 5: Favorite Trails
@@ -564,9 +563,6 @@ with tab5:
                 st.subheader(trail_id)
                 st.write(overview)
 
-# ==================================================
-# Download Favorite Trails
-# ==================================================
 st.divider()
 
 st.caption(
