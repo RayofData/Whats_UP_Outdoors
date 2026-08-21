@@ -1,32 +1,22 @@
 # What’s UP Outdoors: Upper Peninsula Trail Explorer
 
-**Status:** MVP in development  
-**Version:** 0.7  
-**Application:** Streamlit application with standalone DNR and historical-observation ETL workflows
+**Status:** MVP implementation complete  
+**Application:** Streamlit application with runtime iNaturalist and Google Gemini integrations, plus standalone DNR and historical-observation ETL workflows
 
 ## 1. Purpose
 
 **What’s UP Outdoors** helps users discover hiking trails in Michigan’s Upper Peninsula and review nearby iNaturalist observations.
 
 - **Primary goal:** Demonstrate a reproducible, tested, and maintainable geospatial data workflow using Python, pandas, GeoPandas, Shapely, APIs, and Parquet.
-- **Secondary goal:** Provide a clean Streamlit interface for ZIP-based trail discovery, mapping, trail details, wildlife observations, and session-based favorites.
+- **Secondary goal:** Provide a Streamlit interface for ZIP-based trail discovery, filtering, mapping, observation exploration, AI-generated trail summaries, and session-based favorites and notes.
 
 ## 2. Architecture
 
 ### Entry points
 
-1. **`app.py`**  
-   Defines Streamlit UI flow and coordinates module calls. The application reads processed trail and historical iNaturalist Parquet datasets from `data/processed/`. It does not directly perform raw-data cleaning, HTTP requests, spatial calculations, or Folium map construction.
-
-2. **`util/etl_dnr_trails.py`**  
-   Downloads Michigan DNR trail data, saves the raw response under `data/raw/`, validates and processes the trails, and writes the app-ready DNR GeoParquet under `data/processed/`.
-
-3. **`util/etl_inaturalist_history.py`**  
-   One-time reproducibility script for converting the manually downloaded historical iNaturalist CSV into:
-
-   `data/processed/inaturalist_historical_up_fall_observations.parquet`
-
-   The raw CSV remains local and Git-ignored. The processed historical Parquet is committed to the repository.
+1. **`app.py`** coordinates Streamlit UI flow and reusable application modules. It reads processed trail and historical iNaturalist Parquet datasets from `data/processed/`.
+2. **`util/etl_dnr_trails.py`** downloads, validates, transforms, and saves the Michigan DNR trail dataset.
+3. **`util/etl_inaturalist_history.py`** converts the manually downloaded historical iNaturalist export into the processed Parquet dataset used by the app.
 
 ### Core modules
 
@@ -34,7 +24,9 @@
 src/
 ├── apis/
 │   ├── dnr_api.py
+│   ├── genai_api.py
 │   └── inaturalist_api.py
+├── ai.py
 ├── trails.py
 ├── locations.py
 ├── spatial.py
@@ -45,44 +37,42 @@ src/
 
 Responsibilities:
 
-- `apis/dnr_api.py`: DNR HTTP requests, batching, service-response validation, raw-download validation, and profiling.
-- `apis/inaturalist_api.py`: iNaturalist HTTP requests, pagination, parameters, and API-response validation.
-- `trails.py`: trail cleaning, normalization, grouping, aggregation, and length categories.
-- `locations.py`: ZIP normalization, validation, `pgeocode` lookup, and user point creation.
-- `spatial.py`: CRS transformations, distance calculations, radius filtering, nearest-trail filtering, and related spatial operations.
-- `inaturalist.py`: historical Parquet loading, recent-observation normalization, taxon mapping, and species summaries.
-- `streamlit_ui.py`: visual output handling in streamlit for trails dataframe observation printing, also handles resets
-- `maps.py`: Folium map construction.
+- `apis/dnr_api.py`: Michigan DNR HTTP requests, batching, validation, and profiling helpers.
+- `apis/genai_api.py`: Google Gemini client creation and text-generation requests.
+- `apis/inaturalist_api.py`: iNaturalist HTTP requests, parameters, pagination, and response validation.
+- `ai.py`: AI input preparation, prompt construction, cached generation, and fallback handling.
+- `trails.py`: trail cleaning, normalization, grouping, aggregation, filtering, and favorite-trail lookup.
+- `locations.py`: ZIP normalization, validation, `pgeocode` lookup, and user-point creation.
+- `spatial.py`: CRS transformations, distances, buffers, spatial filtering, and historical observation-density calculations.
+- `inaturalist.py`: observation normalization, taxon mapping, display limits, and species summaries.
+- `streamlit_ui.py`: state resets, tables, metrics, species displays, favorites, notes, and downloads.
+- `maps.py`: Folium trail and observation maps.
 
-`*_api.py` modules contain HTTP/service-response logic only. They must not perform application data cleaning, spatial calculations, map construction, or Streamlit rendering.
+External-service request logic is isolated under `src/apis/`. Data cleaning, spatial calculations, map construction, and Streamlit rendering remain in their respective application modules.
 
 ### Technology
 
-- Core: `streamlit`, `pandas`, `geopandas`, `shapely`, `folium`, `streamlit-folium`, `requests`, `pgeocode`, `pyarrow`
+- Core: `streamlit`, `pandas`, `geopandas`, `shapely`, `folium`, `streamlit-folium`, `requests`, `pgeocode`, `pyarrow`, `mapclassify`, `matplotlib`
+- AI: Google Gemini through `google-genai`
 - Testing: `pytest`
-- Do not add dependencies without explicit approval.
 
-## 3. Data Policy and Sources
+## 3. Data Sources and Policy
 
 ### Michigan DNR trails
 
-Source:
-
-`https://gisagodnr.state.mi.us/arcgis/rest/services/DNR/DNRTrailsOPENDATA/MapServer/2`
+Source: Michigan DNR Trails Open Data ArcGIS REST service.
 
 - Scope: Upper Peninsula hiking trails.
-- Raw API responses are local and Git-ignored.
-- Processed DNR GeoParquet is generated by the ETL workflow and committed for use by the deployed application.
-- Preserve DNR-provided trail status values. Use `Unknown` when no usable status is available.
+- Raw API responses remain local and Git-ignored.
+- Processed GeoParquet is generated by the ETL workflow and committed for app use.
+- DNR trail status values are preserved; missing usable values become `Unknown`.
 
 ### Historical iNaturalist observations
 
-- Manually downloaded fixed export.
-- Geographic scope is already centered on the Upper Peninsula area.
-- May include nearby Wisconsin and Canadian observations.
-- September–October, 2015–2025.
+- Manually downloaded export covering September–October 2015–2025.
+- Geographic scope is centered on the Upper Peninsula area and may include nearby Wisconsin and Canadian observations.
 - Raw CSV remains local and Git-ignored.
-- Processed Parquet is committed.
+- Processed Parquet is committed for app use.
 
 ### Recent iNaturalist observations
 
@@ -91,29 +81,25 @@ Source:
 
 ### ZIP geocoding
 
-Use `pgeocode` to resolve valid United States ZIP codes into latitude and longitude.
+Use `pgeocode` to resolve valid U.S. ZIP codes to latitude and longitude.
 
 ## 4. Spatial Rules
 
 Use:
 
-- **WGS 84 (`EPSG:4326`)** for ZIP coordinates, iNaturalist coordinates, and Folium map rendering.
+- **WGS 84 (`EPSG:4326`)** for ZIP coordinates, iNaturalist coordinates, and Folium rendering.
 - **Michigan GeoRef (`EPSG:3078`)** for distance calculations.
 
-Before distance calculations:
+Distance calculations must use the actual trail geometry rather than trail centroids.
 
-1. Confirm or define the known source CRS.
-2. Reproject with `.to_crs("EPSG:3078")`.
-3. Use the actual trail geometry, not a centroid.
-4. Convert calculated meters to miles.
+### Required behavior
 
-### Required distance behavior
+- ZIP-to-trail distance is the shortest point-to-trail distance.
+- Observation-to-trail distance is the shortest point-to-trail distance.
+- Qualifying observations must fall within **2 miles** of the selected trail after local spatial filtering in `EPSG:3078`.
+- The final local two-mile spatial filter is authoritative regardless of the API query geometry used to retrieve candidate observations.
 
-- ZIP-to-trail distance: shortest distance from ZIP point to actual trail line or multiline geometry.
-- Observation-to-trail distance: shortest distance from observation point to actual selected-trail geometry.
-- A qualifying observation has a shortest point-to-trail distance of **≤ 2 miles in `EPSG:3078`**.
-
-The exact iNaturalist API query-area construction is an implementation detail. The final local two-mile spatial filter is authoritative.
+Historical observations are also converted to observations-per-square-mile values for each supported taxon group. These values are displayed in the app and supplied to AI summaries.
 
 ## 5. DNR Trail Preparation
 
@@ -122,45 +108,43 @@ The exact iNaturalist API query-area construction is an implementation detail. T
 1. Download matching DNR trail features.
 2. Save the raw response locally.
 3. Validate the download.
-4. Replace known placeholder values defined in `PLACEHOLDER_VALUES`.
-5. Apply the existing trail-name normalization.
-6. Group trail segments by normalized trail name and county.
+4. Replace known placeholder values.
+5. Normalize trail names.
+6. Group segments by normalized trail name and county.
 7. Aggregate trail attributes.
 8. Add trail length categories.
-9. Save the app-ready DNR GeoParquet under `data/processed/`.
+9. Save the processed GeoParquet under `data/processed/`.
 
 Repeated trail names in different counties remain separate trails.
 
 ### Aggregation rules
 
-- **Length:** sum DNR `SegmentLengthMiles` into `ReportedLengthMiles`.
-- **Length category:**  
-  - Short: ≤ 2 miles  
-  - Medium: > 2 and ≤ 7 miles  
-  - Long: > 7 miles ≤ 20 miles
-  - Extremely long: > 20 miles
-- **Width:** one value if all valid segments agree, `Varies` if they differ, `Unknown` if none are valid.
-- **Surface:** one value if all valid segments agree; otherwise comma-separated unique values; `Unknown` if none are valid.
-- **Status:** preserve DNR values; use one value if all valid segments agree; otherwise comma-separated unique values; `Unknown` if none are valid.
+- **Length:** sum `SegmentLengthMiles` into `ReportedLengthMiles`.
+- **Length category:**
+  - Short: ≤ 2 miles
+  - Medium: > 2 and ≤ 7 miles
+  - Long: > 7 and ≤ 20 miles
+  - Extremely Long: > 20 miles
+- **Width:** one value if valid segments agree, `Varies` if they differ, `Unknown` if none are usable.
+- **Surface:** one value if valid segments agree; otherwise comma-separated unique values; `Unknown` if none are usable.
+- **Status:** preserve DNR values using the same one/multiple/unknown rule.
 
-Geometry-derived trail lengths were manually audited against DNR-reported values. Production uses `ReportedLengthMiles`.
+Production uses `ReportedLengthMiles` rather than geometry-derived trail length.
 
 ## 6. Historical Observation Preparation
 
-`util/etl_inaturalist_history.py` is a one-time reproducibility script and is not part of normal app startup or `util/etl_dnr_trails.py`.
+`util/etl_inaturalist_history.py` converts the manually downloaded historical export into the processed application dataset.
 
-The source export is already geographically scoped and already limited to September–October 2015–2025.
+The workflow must:
 
-The script must:
-
-- keep only supported taxon groups
-- require a species-level scientific name
+- keep supported taxon groups only
+- require species-level scientific names
 - require valid latitude and longitude
 - remove duplicate observation IDs
 - preserve nearby Wisconsin and Canadian observations
-- avoid applying an additional Michigan-only or UP-boundary filter
+- avoid an additional Michigan-only or UP-boundary filter
 
-Normalize to:
+Normalized fields:
 
 ```text
 observation_id
@@ -173,130 +157,104 @@ longitude
 latitude
 ```
 
-## 7. ZIP Search and Nearby Trails
+### Rebuilding processed datasets
 
-The user may enter any valid U.S. ZIP code and choose:
+The committed processed datasets are sufficient to run the app. Rebuild only when reproducing or refreshing the ETL workflows.
 
-- 10 miles
-- 25 miles
-- 50 miles
+```powershell
+python util/etl_dnr_trails.py
+python util/etl_inaturalist_history.py
+```
 
-Search flow:
+The historical workflow requires the manually downloaded iNaturalist export at:
+
+```text
+data/raw/inaturalist_up_fall_observations_2015_2025.csv
+```
+
+## 7. ZIP Search and Trail Filtering
+
+Users may enter any valid U.S. ZIP code and choose a 10-, 25-, or 50-mile search radius.
+
+Search behavior:
 
 1. Validate and normalize the ZIP.
-2. Resolve lat/lon with `pgeocode`.
-3. Create the ZIP point in `EPSG:4326`.
-4. Reproject the ZIP point and trails to `EPSG:3078`.
-5. Calculate true point-to-trail distance.
-6. Keep trails inside the selected radius.
-7. Sort nearest to farthest.
-8. Return at most 20 trails.
+2. Resolve its coordinates.
+3. Calculate true point-to-trail distances in `EPSG:3078`.
+4. Keep trails inside the selected radius.
+5. Sort nearest to farthest.
+6. Return at most 20 trails.
 
-### Search outcomes
+Length category, surface, and trail-name filters then apply to the current trail result set.
 
-- **Valid ZIP + matches:** show up to 20 nearest trails.
-- **Valid ZIP + no matches:** show an empty table and a normal informational message such as `No trails found within 25 miles.`
-- **Invalid or unresolved ZIP:** show validation feedback and do not run the distance search.
-- Expected user input errors must not expose raw stack traces.
+Expected input errors must produce normal Streamlit feedback rather than raw stack traces.
 
-## 8. Streamlit UI
+## 8. Streamlit UI and State
 
-Use `st.session_state` for favorites and other state that must persist across Streamlit reruns.
+Use `st.session_state` for the selected trail, per-trail recent observations, favorites, favorite notes, generated AI summaries, and widget-selection state. These values persist across reruns in the current session only.
 
-### Sidebar
+### Sidebar and filters
 
-- Display session favorites.
-- Provide CSV export for favorites.
-- Export fields exactly:
-  - Trail
-  - County
-  - Length
-  - Surface
-  - Width
+The sidebar contains ZIP search, radius controls, resolved ZIP information, validation feedback, and the Upper Peninsula reference image.
 
-### Tab 1: Trails
+Length category, surface, and trail-name filters appear above the main tabs. Changing search criteria clears the active trail selection.
 
-Before ZIP search:
+### Tab 1: Browse & Filter Trails
 
-- display all grouped UP trails
+- Display all grouped UP trails before a ZIP search.
+- After a ZIP search, display the filtered subset of up to 20 nearby trails.
+- Include trail attributes, ZIP distance when applicable, historical taxon-density columns, and summary metrics.
+- Store the selected trail by `TrailGroupName` in session state.
 
-After ZIP search:
+### Tab 2: Explore Trails Map
 
-- display up to 20 matching trails
-- sort nearest first
-- include `Distance from ZIP`
-- show the number of matching trails
+Display the same current trail result set shown in Tab 1 on an interactive Folium map, with matching summary metrics.
 
-Displayed fields:
+### Tab 3: Selected Trail Details
 
-- Trail
-- County
-- Distance from ZIP when applicable
-- Length Category
-- Length (Miles)
-- Width
-- Surface
-- Status
+For the selected trail, display trail attributes, historical taxon density, the observation map, recent and historical species summaries, and favorite controls.
 
-### Trail selection
+A trail may be selected from Tab 1 or reopened from Saved Favorite Trails.
 
-Tab 1 is the single source of truth for selected trail state.
+### Tab 4: AI Trail Summary
 
-- The user selects a trail in Tab 1.
-- Store the selected trail in `st.session_state`.
-- ZIP search is not required before selecting a trail.
-- Tab 3 must not contain a separate competing trail selector.
+Generate an on-demand Google Gemini overview using:
 
-### Tab 2: Map
+- selected trail name, county, reported length, width, and surface
+- recent nearby observations and species summaries
+- historical observation density by supported taxon group
 
-Before ZIP search:
+Trail-specific facts and sightings must come from supplied project data. General knowledge may only be used to interpret listed species, and sightings must not be presented as guaranteed encounters.
 
-- display all grouped UP trails
+Generation uses Streamlit caching and returned summaries are also stored by trail in the current session. Failures return a fallback message rather than crashing the app.
 
-After ZIP search:
+The current AI feature does not retrieve parking information, recent trail news, or current trail conditions.
 
-- display the same maximum-20 result set shown in Tab 1
+### Tab 5: Saved Favorite Trails
 
-### Tab 3: Trail Details
+- Display favorites in a table and Folium map.
+- Allow a selected favorite to reopen Trail Details, be removed, or receive an editable note.
+- Provide expandable session views of saved notes and AI summaries.
+- Allow favorites map download as HTML.
+- Allow favorites download as CSV.
 
-If no trail has been selected in Tab 1, show a simple prompt to select one.
+CSV fields:
 
-For the selected trail, display:
-
-- trail name
-- county
-- status
-- `ReportedLengthMiles`
-- length category
-- surface
-- width
-- selected-trail observation map
-- recent species summaries
-- historical species summaries
-- add/remove favorite control
-
-### Tab 4: AI Overview
-
-
-
-### Tab 5: Favorite Trails
-
-If no trails saved to favorite, display message favorites can be saved from trail details tab. 
-
-For the complete list of favorite trails, display:
-
-- single folium map with all favorite trails
-- trail name
-- county
-- status
-- `ReportedLengthMiles`
-- length category
-- surface
-- width
+```text
+Trail
+County
+LengthCategory
+Length (Miles)
+Width
+Surface
+Taxon Density
+AI Overview
+Notes
+```
 
 ## 9. iNaturalist Integration
 
-Use this mapping in `inaturalist.py` as the single source of truth:
+Supported taxon groups are defined in `inaturalist.py`:
 
 ```python
 TAXON_GROUPS = {
@@ -313,96 +271,83 @@ Observations outside these groups do not appear in species summaries.
 
 ### Recent observations
 
-- Fetch the previous 21 days from the iNaturalist API.
+- Fetch observations from the previous 21 days.
 - Normalize API results into the common application schema.
-- Apply the required two-mile point-to-trail filter locally.
-
-If the API request fails:
-
-- show `Recent observations unavailable`
-- continue displaying the selected trail and historical observations
-- do not crash
-
-If the API succeeds but no recent observations qualify:
-
-- show `No recent observations found`
-- treat this as a normal result, not an error
+- Apply the authoritative local two-mile trail filter.
+- Store successful filtered results by trail for reuse during the session.
+- Treat no qualifying observations as a normal result.
+- If the API request fails, continue showing trail and historical data without crashing.
 
 ### Historical observations
 
-- Load the committed historical Parquet.
-- Apply the same authoritative two-mile point-to-trail filter used for recent observations.
+Load the committed historical Parquet and apply the same two-mile point-to-trail filter used for recent observations.
 
-### Observation map
+### Observation map and species summaries
 
-The selected-trail map must:
+The selected-trail map must show the full trail geometry and qualifying recent/historical observations while remaining usable when either period is empty.
 
-- show the complete trail geometry
-- show only qualifying observations
-- visually distinguish recent and historical observations
-- remain usable when either period has no observations
-
-### Species summaries
-
-Calculate recent and historical summaries separately.
-
-For each period:
-
-- group by supported taxon group
-- rank species by observation count
-- break count ties using most recent observation date
-- show up to 10 species per taxon group
-- include display/common name, count, most recent date, and thumbnail when available
+Species summaries are calculated separately for recent and historical observations, grouped by supported taxon, ranked by observation count with recent-date tie breaking, and limited to 10 species per taxon group.
 
 Missing optional names or thumbnails must not crash the app.
 
 ## 10. Favorites
 
-Favorites are required for the MVP.
+Favorites are stored for the current Streamlit session.
 
-- Add/remove favorite from Tab 3.
-- Store favorites in `st.session_state`.
-- Display favorites in the sidebar.
-- Allow CSV download from the sidebar.
-- Favorites last for the current Streamlit session.
+Users can:
 
-CSV fields:
+- add or remove the active trail
+- manage favorites from Tab 5
+- reopen a favorite in Trail Details
+- add or edit personal notes
+- download the favorites map as HTML
+- download favorites as CSV
 
-```text
-Trail
-County
-Length
-Surface
-Width
+Generated AI summaries and notes are included in the CSV when available.
+
+## 11. Local Development
+
+The deployed Streamlit app is the primary way to use the project. For local development, create and activate a Python 3.12 virtual environment:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-## 11. Testing
+Install dependencies:
 
-Use a concise `pytest` suite targeting approximately **8 tests total**. Exact distribution is flexible.
+```powershell
+python -m pip install -r requirements.txt
+```
 
-Use small deterministic fixtures. Do not rely on live external APIs.
+To generate AI summaries locally, make either `GOOGLE_API_KEY` or `GEMINI_API_KEY` available to the application process.
 
-High-value behaviors include:
+Start the application:
 
-- placeholder cleanup
-- trail grouping and aggregation
-- representative API validation/mocking
-- ZIP-to-trail point distance in `EPSG:3078`
-- search-radius filtering
-- nearest-first ordering
-- maximum-20 result behavior
-- two-mile observation filtering
+```powershell
+streamlit run app.py
+```
 
-Avoid large matrices of low-value HTTP or UI tests for the MVP.
+The committed processed datasets are sufficient to run the app; rebuilding them is only required to reproduce or refresh the ETL workflows described in Section 6.
 
-## 12. Guardrails
+## 12. Testing
 
-Do not add these to the MVP:
+Run the automated test suite with:
 
-- browser/device geolocation
-- driving-distance or routing features
-- weather integration
-- machine-learning recommendations
-- hosted/production infrastructure beyond Streamlit Community Cloud
+```powershell
+python -m pytest
+```
 
-Keep the implementation understandable, reproducible, simple to deploy, and small enough to explain clearly in an interview.
+Tests use deterministic fixtures where practical and should not depend on live DNR, iNaturalist, or Gemini HTTP requests.
+
+## 13. Current Limitations and Future Work
+
+- ZIP distance is straight-line point-to-trail distance, not driving distance.
+- DNR trail status may not represent current on-site conditions.
+- Historical observations are limited to September–October 2015–2025.
+- Recent observations depend on iNaturalist API availability.
+- iNaturalist sightings do not guarantee species presence.
+- AI summaries use supplied project data and do not independently verify current conditions.
+- Live parking, recent trail news, or current-condition retrieval would require web search or another external data source, potentially through a paid API.
+
+Future enhancements may include automated dataset refreshes, AI-assisted parking/current trail information, and downloadable trail reports.
