@@ -130,6 +130,9 @@ if "favorites" not in st.session_state:
 if "favorites_notes" not in st.session_state:
     st.session_state.favorites_notes = {}
 
+if "favorite_selection_version" not in st.session_state:
+    st.session_state.favorite_selection_version = 0
+
 if "favorites_ai_summaries" not in st.session_state:
     st.session_state.favorites_ai_summaries = {}
 
@@ -272,9 +275,9 @@ st.divider()
 # ==================================================
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     ":hiking_boot: **Browse & Filter Trails**",
-    ":round_pushpin: **Explore Trail Map**",
-    ":eagle: **Selected Trail Details**",
-    ":robot: **AI Trail Summary & Current Info**",
+    ":round_pushpin: **Explore Trails Map**",
+    ":eagle: **Selected Trail Observations Details**",
+    ":sparkles: **AI Trail Summary & Current Info**",
     ":star: **Saved Favorite Trails**",
 ])
 
