@@ -263,6 +263,7 @@ def download_button(trails):
             "TrailWidth",
             "SurfaceTypes",
             "TaxonDensity",
+            "AI Overview",
             "Notes",
         ]
     ].rename(

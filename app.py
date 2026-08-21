@@ -558,6 +558,12 @@ with tab5:
         else:
             st.info("No trail notes saved yet.")
 
+    with st.expander("View All AI Summaries"):
+        if st.session_state.favorites_ai_summaries.items():
+            for trail_id, overview in st.session_state.favorites_ai_summaries.items():
+                st.subheader(trail_id)
+                st.write(overview)
+
 # ==================================================
 # Download Favorite Trails
 # ==================================================
