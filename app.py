@@ -39,7 +39,6 @@ from src.inaturalist import (
     TAXON_GROUPS,
     convert_to_geodataframe,
     split_observations_by_taxon,
-    summarize_species,
     normalize_recent_observations,
     limit_observations
 )
@@ -58,6 +57,11 @@ from src.streamlit_ui import (
     favorite_button_display,
     add_taxon_density_display_column,
     display_favorites_section
+)
+
+from src.ai import (
+    build_trail_ai_data,
+    describe_trail
 )
 
 # ==================================================
@@ -122,6 +126,9 @@ if "favorites" not in st.session_state:
 
 if "favorites_notes" not in st.session_state:
     st.session_state.favorites_notes = {}
+
+if "favorites_ai_summaries" not in st.session_state:
+    st.session_state.favorites_ai_summaries = {}
 
 length_categories = []
 trail_name = ""
@@ -260,10 +267,11 @@ st.divider()
 # ==================================================
 # Tabs
 # ==================================================
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     ":hiking_boot: **Browse & Filter Trails**",
-    ":round_pushpin: **Explore Trails on Map**",
+    ":round_pushpin: **Explore Trail Map**",
     ":eagle: **Selected Trail Details**",
+    ":robot: **AI Trail Summary & Current Info**",
     ":star: **Saved Favorite Trails**",
 ])
 
@@ -462,9 +470,49 @@ with tab3:
         )
 
 # ==================================================
-# Tab 4: Favorite Trails
+# Tab 4: AI Trail Summary & Current Info
 # ==================================================
 with tab4:
+    st.header("AI Trail Summary & Current Info")
+
+    st.markdown(
+        """
+        Explore an AI-generated overview of the selected trail using its trail details,
+        recent iNaturalist observations, and historical observation patterns.
+
+        This section can also surface current trail information and nearby parking to
+        help you get a more complete picture before your visit.
+        """
+    )
+
+    if selected_trail is not None:
+        trail_data = build_trail_ai_data(selected_trail, limited_api_observations)
+        
+        if  st.button("Generate AI Overview"):
+            summary = describe_trail(trail_data)
+
+            st.session_state.favorites_ai_summaries[
+                st.session_state.selected_trail_id
+            ] = summary
+
+        saved_summary = st.session_state.favorites_ai_summaries.get(
+            st.session_state.selected_trail_id
+        )
+
+        if saved_summary:
+            st.subheader(f"AI Overview for {st.session_state.selected_trail_id}")
+            st.write(saved_summary)
+
+    else:
+        st.info(
+            "Click on a trail in tab 1 to see details."
+        )
+
+
+# ==================================================
+# Tab 5: Favorite Trails
+# ==================================================
+with tab5:
     st.header("Saved Favorite Trails")
 
     st.markdown(
