@@ -76,7 +76,7 @@ def build_trail_ai_data(selected_trail, recent_observations):
     return trail_data
 
 
-@st.cache_data(ttl="1d", max_entries=500, show_spinner=True, show_time=True)
+@st.cache_data(ttl="1d", max_entries=500, show_spinner="Generating Overview...", show_time=True)
 def _generate_trail_summary(trail_data):
     """Return a natural-language summary of the supplied trail details."""
     prompt = f"""
