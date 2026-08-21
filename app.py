@@ -7,7 +7,6 @@ from streamlit_folium import st_folium
 import geopandas as gpd 
 import pandas as pd
 import requests
-from datetime import datetime
 
 
 from src.trails import (
@@ -16,17 +15,13 @@ from src.trails import (
 )
 
 from src.locations import (
-    normalize_zipcode, 
     zip_to_point,
     get_zip_info
 )
 from src.spatial import (
     find_nearby_trails, 
     distance_to_trails,
-    distances_to_trail,
-    create_trail_buffer
-)
-from src.spatial import (
+    create_trail_buffer,
     filter_observations_near_trail,
     add_taxon_density_to_trails
 )
@@ -35,11 +30,7 @@ from src.maps import (
     display_observation_map_fragment
 )
 from src.inaturalist import (
-    OBSERVATION_DISPLAY_COLUMNS,
-    TAXON_GROUPS,
     convert_to_geodataframe,
-    split_observations_by_taxon,
-    summarize_species,
     normalize_recent_observations,
     limit_observations
 )
@@ -47,7 +38,6 @@ from src.apis.inaturalist_api import (
     DAYS_RETRIEVED,
     fetch_recent_observations
 )
-
 from src.streamlit_ui import (
     reset_selection,
     reset_search,
@@ -56,12 +46,15 @@ from src.streamlit_ui import (
     display_species_groups,
     display_metrics,
     favorite_button_display,
-    display_favorites_map,
     select_favorite_for_details,
+    display_favorites_map,
     remove_favorite,
     add_notes_button,
     download_button,
-    add_taxon_density_display_column,
+)
+from src.ai import (
+    build_trail_ai_data,
+    describe_trail,
 )
 
 # ==================================================
@@ -105,7 +98,7 @@ historical_observations = load_historical_observations()
 
 @st.cache_data(show_spinner="Preparing trail and historical observation data...", show_time=True)
 def add_historical_taxon_counts(_trails, _historical_observations):
-    return add_taxon_density_to_trails(trails, historical_observations)
+    return add_taxon_density_to_trails(_trails, _historical_observations)
 
 trails = add_historical_taxon_counts(trails, historical_observations)
 
@@ -129,6 +122,9 @@ if "favorites_notes" not in st.session_state:
 
 if "favorite_selection_version" not in st.session_state:
     st.session_state.favorite_selection_version = 0
+
+if "favorites_ai_summaries" not in st.session_state:
+    st.session_state.favorites_ai_summaries = {}
 
 length_categories = []
 trail_name = ""
@@ -267,10 +263,11 @@ st.divider()
 # ==================================================
 # Tabs
 # ==================================================
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     ":hiking_boot: **Browse & Filter Trails**",
-    ":round_pushpin: **Explore Trails on Map**",
-    ":eagle: **Selected Trail Details**",
+    ":round_pushpin: **Explore Trails Map**",
+    ":eagle: **Selected Trail Observations Details**",
+    ":sparkles: **AI Trail Summary**",
     ":star: **Saved Favorite Trails**",
 ])
 
@@ -423,12 +420,7 @@ with tab3:
 
             except requests.exceptions.RequestException:
                 st.warning(api_warning)
-            except requests.exceptions.HTTPError: 
-                st.warning(api_warning)
-            except requests.exceptions.ConnectionError:
-                st.warning(api_warning)
-            except requests.ReadTimeout:
-                st.warning(api_warning)
+
 
             filtered_historical_observations = (
                 filter_observations_near_trail(
@@ -475,17 +467,52 @@ with tab3:
         )
 
 # ==================================================
-# Tab 4: Favorite Trails
+# Tab 4: AI Trail Summary
 # ==================================================
 with tab4:
+    st.header("AI Trail Summary")
+
+    st.markdown(
+        """
+        Generate an AI overview of the selected trail using its trail details,
+        recent iNaturalist observations, and historical observation patterns.
+        Overviews are saved for downloaded favorites.
+        """
+    )
+
+    if selected_trail is None:
+        st.info(
+            "Click on a trail in tab 1 to see details."
+        )
+    
+    else:
+        trail_data = build_trail_ai_data(selected_trail, limited_api_observations)
+        
+        if  st.button("Generate AI Overview"):
+            summary = describe_trail(trail_data)
+
+            st.session_state.favorites_ai_summaries[
+                st.session_state.selected_trail_id
+            ] = summary
+
+        saved_summary = st.session_state.favorites_ai_summaries.get(
+            st.session_state.selected_trail_id
+        )
+
+        if saved_summary:
+            st.subheader(f"AI Overview for {st.session_state.selected_trail_id}")
+            st.write(saved_summary)
+
+# ==================================================
+# Tab 5: Favorite Trails
+# ==================================================
+with tab5:
     st.header("Saved Favorite Trails")
 
     st.markdown(
-        "View the trails you have saved as favorites during the current session. "
-        "Select a trail from the table to add or edit a note, remove it from your "
-        "favorites, or set it as the selected trail for the Trail Details tab. "
-        "Notes are stored for the current session and included when you download "
-        "your favorites as a CSV."
+        "View and manage your saved favorite trails. Select a trail to view details, "
+        "remove it from your favorites, or add personal notes. Notes and AI summaries "
+        "are saved for the current session and included in the favorites CSV download."
     )
 
     favorites_df = favorite_trails_df(
@@ -500,13 +527,13 @@ with tab4:
         favorites_df
     )
 
-    col1, col2 = st.columns(2)
+    notes_col, manage_col = st.columns(2)
 
-    with col1:
+    with notes_col:
         select_favorite_for_details(selected_favorite)
         add_notes_button(trails, selected_favorite)
 
-    with col2:
+    with manage_col:
         remove_favorite(selected_favorite)  
         download_button(trails)
 
@@ -518,10 +545,12 @@ with tab4:
         else:
             st.info("No trail notes saved yet.")
 
+    with st.expander("View All AI Summaries"):
+        if st.session_state.favorites_ai_summaries.items():
+            for trail_id, overview in st.session_state.favorites_ai_summaries.items():
+                st.subheader(trail_id)
+                st.write(overview)
 
-# ==================================================
-# Download Favorite Trails
-# ==================================================
 st.divider()
 
 st.caption(

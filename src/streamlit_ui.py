@@ -247,6 +247,12 @@ def download_button(trails):
         .fillna("")
     )
 
+    download_df["AI Overview"] = (
+        download_df["TrailGroupName"]
+        .map(st.session_state.favorites_ai_summaries)
+        .fillna("")
+    )
+
 
     download_df = download_df[
         [
@@ -257,6 +263,7 @@ def download_button(trails):
             "TrailWidth",
             "SurfaceTypes",
             "TaxonDensity",
+            "AI Overview",
             "Notes",
         ]
     ].rename(

@@ -9,4 +9,5 @@ requests
 shapely
 streamlit
 streamlit-folium
+google-genaic
 pytest
