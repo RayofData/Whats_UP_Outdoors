@@ -38,7 +38,6 @@ from src.apis.inaturalist_api import (
     DAYS_RETRIEVED,
     fetch_recent_observations
 )
-
 from src.streamlit_ui import (
     reset_selection,
     reset_search,
@@ -53,15 +52,9 @@ from src.streamlit_ui import (
     add_notes_button,
     download_button,
 )
-
 from src.ai import (
     build_trail_ai_data,
     describe_trail,
-    select_favorite_for_details,
-    remove_favorite,
-    add_notes_button,
-    download_button,
-    add_taxon_density_display_column,
 )
 
 # ==================================================
