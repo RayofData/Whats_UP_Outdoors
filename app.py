@@ -233,7 +233,7 @@ with zip_col:
 with len_col:
     length_categories = st.multiselect(
         "Length Category",
-        options=["Short", "Medium", "Long", "Extremely Long"],
+        options=["Short < 2mi", "Medium 2-7mi", "Long 7-20mi", "Extremely Long 20mi+"],
         on_change=reset_selection
     )
             
@@ -266,7 +266,7 @@ st.divider()
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     ":hiking_boot: **Browse & Filter Trails**",
     ":round_pushpin: **Explore Trails Map**",
-    ":eagle: **Selected Trail Observations Details**",
+    ":eagle: **Trail Observations Details**",
     ":sparkles: **AI Trail Summary**",
     ":star: **Saved Favorite Trails**",
 ])

@@ -232,7 +232,7 @@ def add_length_category(trails):
     categorized["LengthCategory"] = pd.cut(
         categorized["ReportedLengthMiles"],
         bins=[0,2,7,20, float("inf")],
-        labels = ["Short", "Medium", "Long", "Extremely Long"],
+        labels = ["Short < 2mi", "Medium 2-7mi", "Long 7-20mi", "Extremely Long 20mi+"],
         include_lowest=True,
         right=True
     )

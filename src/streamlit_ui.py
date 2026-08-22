@@ -64,7 +64,10 @@ def display_trails_dataframe(trails, selectable=False):
             "County": "County",
             "DistanceToTrailMiles": "Distance to Trail (Miles)",
             "LengthCategory": "Length Category",
-            "ReportedLengthMiles": "Length (Miles)",
+            "ReportedLengthMiles": st.column_config.NumberColumn(
+                "Length (Miles)",
+                format="%.2f",
+            ),
             "TrailWidth": "Width",
             "SurfaceTypes": "Surface",
             "TrailStatuses": "Status",
@@ -129,7 +132,10 @@ def display_favorite_trails_dataframe(trails):
             "HikingName": "Trail",
             "County": "County",
             "LengthCategory": "Length Category",
-            "ReportedLengthMiles": "Length (Miles)",
+            "ReportedLengthMiles": st.column_config.NumberColumn(
+                "Length (Miles)",
+                format="%.2f",
+            ),
             "TrailWidth": "Width",
             "SurfaceTypes": "Surface",
             "TaxonDensity": "Taxon Density",

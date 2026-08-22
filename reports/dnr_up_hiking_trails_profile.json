@@ -1,10 +1,10 @@
 {
-  "expected_record_count": 2437,
-  "downloaded_record_count": 2437,
+  "expected_record_count": 2450,
+  "downloaded_record_count": 2450,
   "counts_match": true,
   "crs": "EPSG:4326",
   "geometry_types": {
-    "LineString": 2423,
+    "LineString": 2436,
     "MultiLineString": 14
   },
   "missing_geometry_count": 0,
