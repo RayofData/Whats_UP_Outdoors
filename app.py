@@ -560,7 +560,7 @@ st.caption(
 )
 
 st.markdown(
-    "Built by [Ray Hobbs](https://github.com/RayofData) · "
+    "Built by [Ray Hobbs](https://github.com/RayofData/This-is-Ray-of-Data) · "
     "[GitHub](https://github.com/RayofData/Whats_UP_Outdoors) · "
     "[LinkedIn](https://www.linkedin.com/in/ray-hobbs/)"
 )
