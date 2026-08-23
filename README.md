@@ -23,7 +23,7 @@ The application has five main tabs.
 Search from a U.S. ZIP code or filter by trail length, surface, and name. ZIP searches return up to 20 nearby trails ordered from nearest to farthest.
 
 <p align="center">
-  <img src="static/sreenshot_tab1.png" alt="Browse & Filter Trails" width="900">
+  <img src="static/screenshot_tab1.png" alt="Browse & Filter Trails" width="900">
 </p>
 
 ### Explore Trails on Map
@@ -31,7 +31,7 @@ Search from a U.S. ZIP code or filter by trail length, surface, and name. ZIP se
 View the current trail results on an interactive Folium map and inspect trail information directly from the map.
 
 <p align="center">
-  <img src="static/sreenshot_tab2.png" alt="Explore Trails Map" width="900">
+  <img src="static/screenshot_tab2.png" alt="Explore Trails Map" width="900">
 </p>
 
 ### Selected Trail Details
@@ -41,7 +41,7 @@ Select a trail to view its characteristics, full geometry, recent iNaturalist ob
 Observations are filtered to those reported within two miles of the selected trail.
 
 <p align="center">
-  <img src="static/sreenshot_tab3.png" alt="Selected Trail Details" width="900">
+  <img src="static/screenshot_tab3.png" alt="Selected Trail Details" width="900">
 </p>
 
 ### AI Trail Summary
@@ -49,16 +49,15 @@ Observations are filtered to those reported within two miles of the selected tra
 Generate an on-demand Google Gemini overview using selected trail details, recent nearby observations, and historical observation-density data.
 
 <p align="center">
-  <img src="static/sreenshot_tab4.png" alt="AI Trail Summary" width="900">
+  <img src="static/screenshot_tab4.png" alt="AI Trail Summary" width="900">
 </p>
 
 ### Saved Favorite Trails
 
 Compare saved trails in a table and map, reopen trail details, add notes, remove favorites, and download saved trail data. Notes and generated AI summaries are stored for the current Streamlit session.
 
-<!-- Screenshot:  -->
 <p align="center">
-  <img src="static/sreenshot_tab5.png" alt="Saved Favorite Trails" width="900">
+  <img src="static/screenshot_tab5.png" alt="Saved Favorite Trails" width="900">
 </p>
 
 ## Launch the App
