@@ -501,7 +501,7 @@ with tab4:
 
         if saved_summary:
             st.subheader(f"AI Overview for {st.session_state.selected_trail_id}")
-            st.write(saved_summary)
+            st.markdown(saved_summary)
 
 # ==================================================
 # Tab 5: Favorite Trails

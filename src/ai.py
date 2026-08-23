@@ -80,21 +80,40 @@ def build_trail_ai_data(selected_trail, recent_observations):
 def _generate_trail_summary(trail_data):
     """Return a natural-language summary of the supplied trail details."""
     prompt = f"""
-    Write a short, natural hiking trail overview using the supplied trail data.
+    Create a concise hiking overview for September or October travel in
+    Michigan's Upper Peninsula using the supplied trail data.
 
-    Use only the supplied data for trail-specific facts and reported observations.
-    You may use general knowledge to briefly interpret listed species, but do not
-    invent species, observations, conditions, or trail facts. Treat iNaturalist
-    observations as reported sightings near the trail, not guaranteed encounters.
+    Use only the supplied data for trail-specific facts, species, and observations.
+    You may use general knowledge about the listed species and typical September
+    and October conditions in the Upper Peninsula for brief interpretation.
+    Never introduce species that are not listed in the supplied data.
 
-    Highlight only a few notable species across the data, especially fall-color
-    plants, interesting fungi and birds, and mammals that are notable or may
-    warrant caution. Do not list every species.
+    Use exactly these Markdown sections:
+
+    ## 🥾 Trail Overview
+    Summarize the trail itself and what the hiking experience may be like.
+
+    ## 🍂 Fall Colors & Nature Highlights
+    Focus on fall-color plants, seasonal vegetation, fungi, and other scenic
+    nature highlights that are relevant to September and October.
+
+    ## 🦌 Wildlife Watching
+    Highlight a few interesting birds, mammals, reptiles, or insects that may be
+    interesting to watch for. Include only species not already emphasized in the
+    fall-color section or safety section. Treat observations as reported sightings,
+    not guaranteed encounters.
+
+    ## ⚠️ Safety Notes
+    Mention only meaningful hazards tied to species actually present in the supplied
+    observation data, such as potentially dangerous mammals, stinging insects,
+    irritating or poisonous plants, or hazardous snakes. Keep risks in perspective
+    and do not add warnings for species that are not listed.
+
+    Do not list every species. Prefer a few notable examples in each section.
 
     Trail data:
     {json.dumps(trail_data, indent=2)}
     """
-
 
     return generate_text(prompt)
 
