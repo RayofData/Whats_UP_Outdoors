@@ -2,7 +2,7 @@
 
 **What’s UP Outdoors** is a Python and Streamlit application for exploring hiking trails and nearby iNaturalist observations across Michigan’s Upper Peninsula.
 
-[Launch the live app](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/) | [Project specification](SPEC.md) | [AI use disclosure](AI_USE_DISCLOSURE.md) | [Technical Project Reflection](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/)
+[Launch the live app](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/) | [Project specification](SPEC.md) | [AI use disclosure](AI_USE_DISCLOSURE.md) | [Technical Project Reflection](https://arayofdata.blogspot.com/2026/08/whats-UP-data.html)
 
 ## Overview
 
