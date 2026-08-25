@@ -1,8 +1,18 @@
 # What’s UP Outdoors
 
+![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-red?logo=streamlit&logoColor=white)
+![GeoPandas](https://img.shields.io/badge/GeoPandas-Geospatial-139C5A)
+![Folium](https://img.shields.io/badge/Folium-Interactive_Maps-77B829)
+![iNaturalist](https://img.shields.io/badge/iNaturalist-API-74AC00)
+![Google Gemini](https://img.shields.io/badge/Google_Gemini-AI_Summaries-4285F4?logo=googlegemini&logoColor=white)
+
+[![Live App](https://img.shields.io/badge/Live_App-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/)
+
 **What’s UP Outdoors** is a Python and Streamlit application for exploring hiking trails and nearby iNaturalist observations across Michigan’s Upper Peninsula.
 
-[Launch the live app](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/) | [Project specification](SPEC.md) | [AI use disclosure](AI_USE_DISCLOSURE.md) | [Technical Project Reflection](https://arayofdata.blogspot.com/2026/08/whats-UP-data.html)
+
+[Project specification](SPEC.md) | [AI use disclosure](AI_USE_DISCLOSURE.md) | [Technical Project Reflection](https://arayofdata.blogspot.com/2026/08/whats-UP-data.html)
 
 ## Overview
 
