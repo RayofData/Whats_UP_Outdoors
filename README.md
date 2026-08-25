@@ -1,18 +1,12 @@
 # What’s UP Outdoors
 
-![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-App-red?logo=streamlit&logoColor=white)
-![GeoPandas](https://img.shields.io/badge/GeoPandas-Geospatial-139C5A)
-![Folium](https://img.shields.io/badge/Folium-Interactive_Maps-77B829)
-![iNaturalist](https://img.shields.io/badge/iNaturalist-API-74AC00)
-![Google Gemini](https://img.shields.io/badge/Google_Gemini-AI_Summaries-4285F4?logo=googlegemini&logoColor=white)
+[![Live App](https://img.shields.io/badge/Live_App-Launch-FF4B4B?logo=streamlit&logoColor=white)](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/)
+[![Technical Spec](https://img.shields.io/badge/Technical_Spec-Documentation-0969DA?logo=readthedocs&logoColor=white)](SPEC.md)
+[![AI Use Disclosure](https://img.shields.io/badge/AI_Use-Disclosure-6F42C1?logo=openai&logoColor=white)](AI_USE_DISCLOSURE.md)
+[![Project Reflection](https://img.shields.io/badge/Project_Reflection-Blog-F57C00?logo=blogger&logoColor=white)](https://arayofdata.blogspot.com/2026/08/whats-UP-data.html)
 
-[![Live App](https://img.shields.io/badge/Live_App-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://whatsupoutdoors-c5jtsxgkfmw9qkuhrnerhq.streamlit.app/)
 
 **What’s UP Outdoors** is a Python and Streamlit application for exploring hiking trails and nearby iNaturalist observations across Michigan’s Upper Peninsula.
-
-
-[Project specification](SPEC.md) | [AI use disclosure](AI_USE_DISCLOSURE.md) | [Technical Project Reflection](https://arayofdata.blogspot.com/2026/08/whats-UP-data.html)
 
 ## Overview
 
@@ -90,6 +84,22 @@ Local development, testing, and ETL reproduction instructions are documented in 
 - **Short-term weather forecasts:** Add forecast data for the selected trail area to the AI overview to support trip planning.
 - **AI-assisted parking and current trail information:** Retrieve nearby parking and recent trail news or conditions using web search or another external data source.
 - **Automated data refresh pipeline:** Periodically refresh and validate source datasets through an automated ETL workflow.
+
+## Tools and Technologies
+
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)
+![pandas](https://img.shields.io/badge/pandas-Data_Processing-150458?logo=pandas&logoColor=white)
+![GeoPandas](https://img.shields.io/badge/GeoPandas-Geospatial-139C5A)
+![Shapely](https://img.shields.io/badge/Shapely-Spatial_Analysis-3776AB)
+![Folium](https://img.shields.io/badge/Folium-Interactive_Maps-77B829)
+![iNaturalist](https://img.shields.io/badge/iNaturalist-REST_API-74AC00)
+![Google Gemini](https://img.shields.io/badge/Google_Gemini-AI_Summaries-4285F4?logo=googlegemini&logoColor=white)
+![Requests](https://img.shields.io/badge/Requests-HTTP-333333)
+![PyArrow](https://img.shields.io/badge/PyArrow-Parquet-005571)
+![pgeocode](https://img.shields.io/badge/pgeocode-ZIP_Geocoding-555555)
+![pytest](https://img.shields.io/badge/pytest-Testing-0A9EDC?logo=pytest&logoColor=white)
+
 
 ## Project Structure
 
