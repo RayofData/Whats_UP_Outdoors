@@ -352,25 +352,25 @@ def display_metrics(trails):
     with short_col:
         st.metric(
             label="Short Trails", 
-            value=len(trails[trails["LengthCategory"]=="Short"])
+            value=len(trails[trails["LengthCategory"]=="Short < 2mi"])
         )  
 
     with med_col:
         st.metric(
             label="Medium Trails", 
-            value=len(trails[trails["LengthCategory"]=="Medium"])
+            value=len(trails[trails["LengthCategory"]=="Medium 2-7mi"])
         ) 
 
     with long_col:
         st.metric(
             label="Long Trails", 
-            value=len(trails[trails["LengthCategory"]=="Long"])
+            value=len(trails[trails["LengthCategory"]=="Long 7-20mi"])
         ) 
 
     with xlong_col:
         st.metric(
             label="Extremely Long Trails", 
-            value=len(trails[trails["LengthCategory"]=="Extremely Long"])
+            value=len(trails[trails["LengthCategory"]=="Extremely Long 20mi+"])
         )   
 
     with miles_col:
