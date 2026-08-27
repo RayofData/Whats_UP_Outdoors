@@ -51,7 +51,7 @@ def build_trail_map(trails, zip_point=None):
     trail_map = map_trails.explore(
         location = map_center,
         zoom_start=zoom_start,
-        tiles="CartoDB positron",
+        tiles="OpenStreetMap",
         tooltip=[
             "HikingName", 
             "County",

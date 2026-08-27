@@ -175,14 +175,6 @@ def display_favorites_map(trails):
             returned_objects=[] # Prevent map interactions from triggering Streamlit reruns
         )
 
-        map_html = favorites_map.get_root().render()
-
-    st.download_button(
-        label = "Download Trail Map",
-        data = map_html,
-        file_name = "trail_map.html",
-        mime = "text/html"
-    )
 
 
 def select_favorite_for_details(trail_id):
@@ -351,25 +343,25 @@ def display_metrics(trails):
     
     with short_col:
         st.metric(
-            label="Short Trails", 
+            label="Short: <2 Miles", 
             value=len(trails[trails["LengthCategory"]=="Short < 2mi"])
         )  
 
     with med_col:
         st.metric(
-            label="Medium Trails", 
+            label="Medium: 2-7 Miles", 
             value=len(trails[trails["LengthCategory"]=="Medium 2-7mi"])
         ) 
 
     with long_col:
         st.metric(
-            label="Long Trails", 
+            label="Long: 7-20 Miles", 
             value=len(trails[trails["LengthCategory"]=="Long 7-20mi"])
         ) 
 
     with xlong_col:
         st.metric(
-            label="Extremely Long Trails", 
+            label="Extra Long: 20+ Miles", 
             value=len(trails[trails["LengthCategory"]=="Extremely Long 20mi+"])
         )   
 
