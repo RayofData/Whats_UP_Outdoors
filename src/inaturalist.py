@@ -21,13 +21,13 @@ INATURALIST_EXPORT_COLUMNS = [
     "longitude",
     "common_name",
     "iconic_taxon_name",
+    "scientific_name",
     "taxon_species_name",
 ]
 
 OBSERVATION_COLUMN_RENAMES = {
     "id": "observation_id",
     "iconic_taxon_name": "iconic_taxon",
-    "taxon_species_name": "scientific_name",
 }
 
 OBSERVATION_COLUMNS = [
@@ -52,7 +52,15 @@ def normalize_observation_columns(observations):
     """Normalize observation columns to the common application schema."""
     normalized = observations.rename(
         columns=OBSERVATION_COLUMN_RENAMES
-    )
+    ).copy()
+    # Preserve species-level names in older exports; newer exports omit this field.
+    if "taxon_species_name" in normalized.columns:
+        normalized["scientific_name"] = normalized["taxon_species_name"]
+    missing = sorted(set(OBSERVATION_COLUMNS) - set(normalized.columns))
+    if missing:
+        raise ValueError(
+            f"iNaturalist observations are missing required columns: {', '.join(missing)}"
+        )
     return normalized[OBSERVATION_COLUMNS].copy()
 
 

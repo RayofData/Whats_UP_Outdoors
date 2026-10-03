@@ -9,7 +9,7 @@ LAYER_URL = (
 
 QUERY_URL = f"{LAYER_URL}/query"
 
-WHERE_CLAUSE = "Peninsula = 'Upper Peninsula'"
+WHERE_CLAUSE = "1=1"
 BATCH_SIZE = 500
 
 DOWNLOAD_FIELDS = [

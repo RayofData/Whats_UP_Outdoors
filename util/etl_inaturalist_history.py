@@ -1,53 +1,57 @@
 """Convert the historical iNaturalist CSV export to compressed Parquet"""
 
-import sys 
+import sys
 from pathlib import Path
 
-import pandas as pd 
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.inaturalist import (
-    INATURALIST_EXPORT_COLUMNS,  
+    INATURALIST_EXPORT_COLUMNS,
     TAXON_GROUPS,
     normalize_observation_columns
 )
 
 
-RAW_PATH = (
-    PROJECT_ROOT 
-    / "data" 
-    / "raw" 
+RAW_PATH_UP = (
+    PROJECT_ROOT
+    / "data"
+    / "raw"
     / "inaturalist_up_fall_observations_2015_2025.csv"
 )
 
-PROCESSED_PATH = (
-    PROJECT_ROOT 
-    / "data" 
-    / "processed" 
-    / "inaturalist_historical_up_fall_observations.parquet"
+RAW_PATH_LP = (
+    PROJECT_ROOT
+    / "data"
+    / "raw"
+    / "inaturalist_lp_fall_observations_2015_2025.csv"
 )
 
+PROCESSED_PATH = (
+    PROJECT_ROOT
+    / "data"
+    / "processed"
+    / "inaturalist_historical_fall_observations.parquet"
+)
 
 
 def prepare_historical_observations(observations):
     """Clean and normalize historical iNaturalist observations."""
-    observations = observations.copy()
+    observations = normalize_observation_columns(observations)
 
     observations["observed_on"] = pd.to_datetime(
         observations["observed_on"],
         errors="coerce"
     )
-    
-    observations = normalize_observation_columns(observations)
-    
+
     for column in ["latitude", "longitude"]:
         observations[column] = pd.to_numeric(
             observations[column],
             errors="coerce"
         )
-    
+
     observations = observations.loc[
         observations["latitude"].between(-90, 90)
         & observations["longitude"].between(-180, 180)
@@ -71,18 +75,26 @@ def prepare_historical_observations(observations):
 
     observations = observations.drop_duplicates(subset="observation_id")
 
-   
+
     return observations
 
-def main():
-    up_historical = pd.read_csv(
-    RAW_PATH, 
-    usecols = INATURALIST_EXPORT_COLUMNS
+def load_historical_export(path):
+    """Read either export format and report schema errors with the source path."""
+    observations = pd.read_csv(
+        path,
+        usecols=lambda column: column in INATURALIST_EXPORT_COLUMNS,
     )
+    try:
+        return prepare_historical_observations(observations)
+    except ValueError as exc:
+        raise ValueError(f"{path}: {exc}") from exc
 
-    up_historical = prepare_historical_observations(
-        up_historical
-    )
+
+def main():
+    mi_historical = pd.concat(
+        [load_historical_export(path) for path in (RAW_PATH_UP, RAW_PATH_LP)],
+        ignore_index=True,
+    ).drop_duplicates(subset="observation_id", ignore_index=True)
 
     try:
         PROCESSED_PATH.parent.mkdir(
@@ -95,8 +107,8 @@ def main():
         ) from exc
 
 
-    if not up_historical.empty: 
-        up_historical.to_parquet(
+    if not mi_historical.empty:
+        mi_historical.to_parquet(
             PROCESSED_PATH,
             index = False,
             compression="zstd"
@@ -106,7 +118,7 @@ def main():
             "Historical observation processing produced no records."
         )
 
-    print(f"Observations saved: {len(up_historical):,}")
+    print(f"Observations saved: {len(mi_historical):,}")
     print(f"Saved to: {PROCESSED_PATH}")
 
 if __name__ == "__main__":

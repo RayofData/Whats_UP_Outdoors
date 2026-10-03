@@ -138,7 +138,9 @@ Production uses `ReportedLengthMiles` rather than geometry-derived trail length.
 The workflow must:
 
 - keep supported taxon groups only
-- require species-level scientific names
+- require scientific names (use `taxon_species_name` when provided by the export,
+  otherwise `scientific_name`; exports without species names should be filtered
+  to species/subspecies at download time)
 - require valid latitude and longitude
 - remove duplicate observation IDs
 - preserve nearby Wisconsin and Canadian observations
@@ -166,10 +168,13 @@ python util/etl_dnr_trails.py
 python util/etl_inaturalist_history.py
 ```
 
-The historical workflow requires the manually downloaded iNaturalist export at:
+The historical workflow combines both manually downloaded iNaturalist exports,
+removes duplicate observation IDs across them, and writes
+`data/processed/inaturalist_historical_fall_observations.parquet`:
 
 ```text
 data/raw/inaturalist_up_fall_observations_2015_2025.csv
+data/raw/inaturalist_lp_fall_observations_2015_2025.csv
 ```
 
 ## 7. ZIP Search and Trail Filtering

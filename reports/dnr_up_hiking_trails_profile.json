@@ -1,11 +1,11 @@
 {
-  "expected_record_count": 2450,
-  "downloaded_record_count": 2450,
+  "expected_record_count": 9460,
+  "downloaded_record_count": 9460,
   "counts_match": true,
   "crs": "EPSG:4326",
   "geometry_types": {
-    "LineString": 2436,
-    "MultiLineString": 14
+    "LineString": 9414,
+    "MultiLineString": 46
   },
   "missing_geometry_count": 0,
   "empty_geometry_count": 0,
@@ -18,7 +18,7 @@
     "HikingName": 0,
     "FacilityName": 0,
     "County": 0,
-    "Peninsula": 0,
+    "Peninsula": 1,
     "Hiking": 0,
     "TrailUseCategory": 0,
     "OpenClosedStatusNonmotor": 0,
